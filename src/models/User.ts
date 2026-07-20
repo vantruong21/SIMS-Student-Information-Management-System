@@ -136,9 +136,9 @@ export class UserModel extends BaseEntity {
   }
 
   /**
-   * Checks if the account is currently locked.
+   * Checks if the account is currently locked due to failed attempts.
    */
-  public isLocked(): boolean {
+  public isTemporarilyLocked(): boolean {
     if (!this._lockedUntil) return false;
     return new Date() < new Date(this._lockedUntil);
   }

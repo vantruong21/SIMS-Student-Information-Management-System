@@ -93,8 +93,8 @@ export class AppFacade {
       return { success: false, error: 'Account has been deactivated' };
     }
 
-    if (user.isLocked()) {
-      return { success: false, error: 'Account is temporarily locked. Try again in 5 minutes.' };
+    if (user.isTemporarilyLocked()) {
+      return { success: false, user: null, errors: ['Account is locked due to multiple failed login attempts. Try again later.'] };
     }
 
     const hash = await this.hashPassword(password);

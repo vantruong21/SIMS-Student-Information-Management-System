@@ -281,17 +281,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     return success;
   },
 
-  // --- User Actions ---
-  toggleUserLock: (email) => {
-    if (!requireRoles(['Admin'])) return false;
-    // Needs implementation in AppFacade, assuming it exists
-    const facade = AppFacade.getInstance();
-    const success = (facade as any).toggleUserLock ? (facade as any).toggleUserLock(email) : false;
-    if (success) {
-      set({ students: facade.getAllStudents() });
-    }
-    return success;
-  },
+
 
   updateUserProfile: async (email, data) => {
     const facade = AppFacade.getInstance();

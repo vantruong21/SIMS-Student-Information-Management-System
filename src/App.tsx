@@ -14,11 +14,14 @@ import { UserProfile } from './components/UserProfile';
 import { StudentRecords } from './components/StudentRecords';
 import { useAuthStore } from './store/useAuthStore';
 import { useAppStore } from './store/useAppStore';
+import { AppFacade } from './facades/AppFacade';
+import { AlertCircle } from 'lucide-react';
 import { FacultyLayout } from './components/faculty/FacultyLayout';
 import { ScheduleEvent } from './types';
 import { SkipLink } from './components/common/Accessibility';
 import { ToastProvider } from './contexts/ToastContext';
 import { NetworkErrorBoundary } from './components/NetworkErrorBoundary';
+import { useNetwork } from './hooks/useNetwork';
 
 /**
  * App — Root Application Component
@@ -33,6 +36,7 @@ export default function App() {
   const logout = useAuthStore((state) => state.logout);
   const checkSession = useAuthStore((state) => state.checkSession);
   const { initialize, isInitialized } = useAppStore();
+  const isOnline = useNetwork();
 
   // Initialize app data (seed CSV repositories)
   useEffect(() => {
@@ -293,6 +297,12 @@ export default function App() {
 
       {/* Primary Container Box */}
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-5 z-10 min-h-[90vh]">
+        {!isOnline && (
+          <div className="w-full bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-sm font-bold text-xs animate-in slide-in-from-top-4">
+            <AlertCircle className="w-4 h-4" />
+            <span>You are currently offline. Operations will be synced when connection is restored.</span>
+          </div>
+        )}
         
         {/* Main Interface Layout Router */}
         {!currentUser ? (
