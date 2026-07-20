@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle, Info } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle, Info, User, Phone, MapPin, Calendar, ChevronLeft } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { AppFacade } from '../facades/AppFacade';
 import { LiveRegion } from './common/Accessibility';
@@ -20,13 +20,29 @@ export const LoginScreen: React.FC = () => {
   const [infoMessage, setInfoMessage] = useState('');
   const [screenReaderMessage, setScreenReaderMessage] = useState('');
 
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  
+  // Registration fields
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regProgram, setRegProgram] = useState('Software Engineering');
+  const [regPhone, setRegPhone] = useState('');
+  const [regAddress, setRegAddress] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
   const emailRef = useRef<HTMLInputElement>(null);
+  const regNameRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Auto-focus email input on mount
+  // Auto-focus logic
   useEffect(() => {
-    emailRef.current?.focus();
-  }, []);
+    if (mode === 'login') {
+      emailRef.current?.focus();
+    } else {
+      regNameRef.current?.focus();
+    }
+  }, [mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +64,42 @@ export const LoginScreen: React.FC = () => {
       setScreenReaderMessage('Login successful. Redirecting to dashboard.');
     } else {
       setScreenReaderMessage('Login failed. Please check your credentials.');
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+    setInfoMessage('');
+
+    if (!regName.trim() || !regEmail.trim()) {
+      setScreenReaderMessage('Please enter name and email.');
+      return;
+    }
+
+    setIsRegistering(true);
+    setScreenReaderMessage('Submitting registration...');
+    
+    const facade = AppFacade.getInstance();
+    const result = facade.registerStudent({
+      name: regName.trim(),
+      email: regEmail.trim(),
+      program: regProgram,
+      phone: regPhone.trim(),
+      address: regAddress.trim(),
+    });
+
+    setIsRegistering(false);
+
+    if (result.success) {
+      setInfoMessage('Application submitted successfully! Please wait for admin approval.');
+      setMode('login');
+      setScreenReaderMessage('Registration successful. Returning to login.');
+      // Reset form
+      setRegName(''); setRegEmail(''); setRegPhone(''); setRegAddress('');
+    } else {
+      setScreenReaderMessage(`Registration failed: ${result.errors?.[0]}`);
+      useAuthStore.setState({ error: result.errors?.[0] });
     }
   };
 
@@ -81,7 +133,7 @@ export const LoginScreen: React.FC = () => {
             Elevate Edu
           </h1>
           <p className="text-xs md:text-sm text-indigo-900/60 font-medium font-sans">
-            Intellectual Prestige. Secure Access.
+            {mode === 'login' ? 'Intellectual Prestige. Secure Access.' : 'Apply for Admission'}
           </p>
         </div>
 
@@ -102,8 +154,13 @@ export const LoginScreen: React.FC = () => {
         )}
 
         {/* Login Form */}
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 relative z-10 text-left" noValidate>
-
+        {mode === 'login' && (
+        <form 
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="space-y-5 relative z-10"
+          noValidate
+        >
           {/* Email Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-gray-500 uppercase ml-1" htmlFor="login-email">
@@ -221,20 +278,136 @@ export const LoginScreen: React.FC = () => {
           <div className="text-center pt-3">
             <p className="text-xs text-gray-500 font-medium">
               Don't have an account?{' '}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setInfoMessage('Admissions are currently open for the 2025 Academic Cycle. Please contact your local department registrar.');
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  clearError();
+                  setInfoMessage('');
                 }}
-                className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded px-1"
+                className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded px-1 cursor-pointer"
                 aria-label="Apply for a new account"
               >
                 Apply now
-              </a>
+              </button>
             </p>
           </div>
         </form>
+        )}
+
+        {/* Register Form */}
+        {mode === 'register' && (
+        <form 
+          onSubmit={handleRegister}
+          className="space-y-4 relative z-10 animate-in fade-in slide-in-from-right-4 duration-500"
+          noValidate
+        >
+          <div>
+            <label htmlFor="regName" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">Full Name</label>
+            <div className="relative group/input">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
+                <User className="w-4 h-4" />
+              </div>
+              <input
+                ref={regNameRef}
+                id="regName"
+                type="text"
+                required
+                value={regName}
+                onChange={(e) => setRegName(e.target.value)}
+                className="block w-full pl-11 pr-4 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="regEmail" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">Academic Email</label>
+            <div className="relative group/input">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
+                <Mail className="w-4 h-4" />
+              </div>
+              <input
+                id="regEmail"
+                type="email"
+                required
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                className="block w-full pl-11 pr-4 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="regProgram" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">Program</label>
+              <select
+                id="regProgram"
+                value={regProgram}
+                onChange={(e) => setRegProgram(e.target.value)}
+                className="block w-full pl-4 pr-8 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none appearance-none cursor-pointer"
+              >
+                <option value="Software Engineering">Software Eng.</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Graphic Design">Graphic Design</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Business Administration">Business Admin</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="regPhone" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">Phone (Optional)</label>
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <input
+                  id="regPhone"
+                  type="tel"
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
+                  className="block w-full pl-9 pr-3 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="regAddress" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">Address (Optional)</label>
+            <div className="relative group/input">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <input
+                id="regAddress"
+                type="text"
+                value={regAddress}
+                onChange={(e) => setRegAddress(e.target.value)}
+                className="block w-full pl-11 pr-4 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className="px-4 py-3 border border-indigo-200 text-indigo-700 rounded-xl font-bold text-xs hover:bg-indigo-50 focus:ring-4 focus:ring-indigo-100 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={isRegistering}
+              className="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-[0_8px_20px_-4px_rgba(79,70,229,0.3)] font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:shadow-[0_12px_24px_-4px_rgba(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 relative overflow-hidden group/btn outline-none cursor-pointer disabled:opacity-75 focus:ring-4 focus:ring-indigo-300"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {isRegistering ? 'Submitting...' : 'Submit Application'}
+                {!isRegistering && <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 duration-300" />}
+              </span>
+            </button>
+          </div>
+        </form>
+        )}
       </div>
     </div>
   );

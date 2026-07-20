@@ -10,7 +10,7 @@ import { AdminCourseManagement } from './components/admin/AdminCourseManagement'
 import { ProfessorDashboard } from './components/ProfessorDashboard';
 import { DashboardAnalytics } from './components/DashboardAnalytics';
 import { WeeklySchedule } from './components/WeeklySchedule';
-import { StudentProfile } from './components/StudentProfile';
+import { UserProfile } from './components/UserProfile';
 import { StudentRecords } from './components/StudentRecords';
 import { useAuthStore } from './store/useAuthStore';
 import { useAppStore } from './store/useAppStore';
@@ -95,7 +95,13 @@ export default function App() {
         case 'modules':
           return <StudentModules />;
         case 'profile':
-          return <StudentProfile user={currentUser} onUpdateProfile={setUser} />;
+          return <UserProfile user={currentUser} onUpdateProfile={async (data) => {
+            const success = await useAppStore.getState().updateUserProfile(currentUser.email, data);
+            if (success) {
+              const updated = useAppStore.getState().students.find(s => s.email === currentUser.email);
+              if (updated) setUser({ ...currentUser, phone: updated.phone });
+            }
+          }} />;
         case 'schedule':
           return <WeeklySchedule schedule={schedule} />;
         case 'records':
@@ -165,6 +171,14 @@ export default function App() {
           );
         case 'analytics':
           return <DashboardAnalytics user={currentUser} />;
+        case 'profile':
+          return <UserProfile user={currentUser} onUpdateProfile={async (data) => {
+            const success = await useAppStore.getState().updateUserProfile(currentUser.email, data);
+            if (success) {
+              const updated = useAppStore.getState().faculty.find(f => f.email === currentUser.email);
+              if (updated) setUser({ ...currentUser, phone: updated.phone });
+            }
+          }} />;
         case 'settings':
           return (
             <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 text-left animate-in fade-in duration-500">
@@ -208,6 +222,8 @@ export default function App() {
         case 'dashboard':
         case 'students':
         case 'allocation':
+        case 'courses':
+        case 'departments':
           return (
             <AdminDashboard 
               searchQuery={searchQuery}
@@ -216,10 +232,16 @@ export default function App() {
               courses={courses}
             />
           );
-        case 'courses':
-          return <AdminCourseManagement courses={courses} />;
         case 'analytics':
           return <DashboardAnalytics user={currentUser} />;
+        case 'profile':
+          return <UserProfile user={currentUser} onUpdateProfile={async (data) => {
+            const success = await useAppStore.getState().updateUserProfile(currentUser.email, data);
+            if (success) {
+              const updated = useAppStore.getState().users.find(u => u.email === currentUser.email);
+              if (updated) setUser({ ...currentUser, phone: updated.phone });
+            }
+          }} />;
         case 'settings':
           return (
             <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 text-left">

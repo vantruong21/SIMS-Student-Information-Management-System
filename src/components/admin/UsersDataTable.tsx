@@ -27,6 +27,7 @@ interface UsersDataTableProps {
   onImportLocalStudents: (students: Student[]) => void;
   onApproveStudent: (studentId: string) => void;
   onDeleteStudent: (studentId: string) => void;
+  onToggleLock: (email: string) => void;
   onShowToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -38,6 +39,7 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
   onImportLocalStudents,
   onApproveStudent,
   onDeleteStudent,
+  onToggleLock,
   onShowToast
 }) => {
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -265,12 +267,13 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
                             {/* Status */}
                             <td className="py-4 px-6">
                               <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-[10px] font-black ${
+                                student.isLocked ? 'bg-red-50 text-red-700 border border-red-200/50' :
                                 student.status === 'Active'
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50'
                                   : 'bg-amber-50 text-amber-700 border border-amber-200/50'
                               }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${student.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                {student.status}
+                                <span className={`w-1.5 h-1.5 rounded-full ${student.isLocked ? 'bg-red-500' : student.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                {student.isLocked ? 'Locked' : student.status}
                               </span>
                             </td>
 
@@ -311,6 +314,16 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
                                             <span>Approve</span>
                                           </button>
                                         )}
+                                        <button 
+                                          onClick={() => {
+                                            onToggleLock(student.email);
+                                            setActiveMenuId(null);
+                                          }}
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                        >
+                                          <AlertCircle className="w-3.5 h-3.5" />
+                                          <span>{student.isLocked ? 'Unlock Account' : 'Lock Account'}</span>
+                                        </button>
                                         <button 
                                           onClick={() => {
                                             onDeleteStudent(student.id);

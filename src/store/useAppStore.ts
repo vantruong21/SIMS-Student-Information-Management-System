@@ -28,6 +28,7 @@ interface AppState {
   courses: any[];
   enrollments: any[];
   grades: any[];
+  departments: any[];
   isInitialized: boolean;
 
   // Actions
@@ -39,10 +40,12 @@ interface AppState {
   deleteStudent: (studentId: string) => boolean;
   updateStudentStatus: (studentId: string, status: string) => boolean;
   importStudents: (students: any[]) => void;
+  toggleUserLock: (email: string) => boolean;
 
   // Course actions
   addCourse: (data: { code: string; name: string; instructor: string; schedule: string; credits: number; capacity?: number; department?: string }) => { success: boolean; errors?: string[] };
   updateCourseInstructor: (courseId: string, newInstructor: string) => boolean;
+  updateCourse: (courseId: string, data: Partial<{ name: string; instructor: string; schedule: string; credits: number; capacity: number; department: string }>) => boolean;
   deleteCourse: (courseId: string) => boolean;
 
   // Enrollment actions
@@ -51,6 +54,15 @@ interface AppState {
 
   // Grade actions
   updateGrade: (studentId: string, courseId: string, type: 'assignment' | 'midterm' | 'final', value: number) => boolean;
+
+  // Department actions
+  addDepartment: (data: { name: string; head: string; description: string; facultyCount?: number }) => { success: boolean; errors?: string[] };
+  updateDepartment: (id: string, data: Partial<{ name: string; head: string; description: string; facultyCount: number }>) => boolean;
+  deleteDepartment: (id: string) => boolean;
+
+  // User actions
+  toggleUserLock: (email: string) => boolean;
+  updateUserProfile: (email: string, data: { phone?: string; password?: string }) => Promise<boolean>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -58,6 +70,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   courses: [],
   enrollments: [],
   grades: [],
+  departments: [],
   isInitialized: false,
 
   initialize: async () => {
@@ -71,6 +84,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       courses: facade.getAllCourses(),
       enrollments: facade.getEnrollments(),
       grades: facade.getAllGrades(),
+      departments: facade.getAllDepartments ? facade.getAllDepartments() : [],
       isInitialized: true,
     });
   },
@@ -82,6 +96,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       courses: facade.getAllCourses(),
       enrollments: facade.getEnrollments(),
       grades: facade.getAllGrades(),
+      departments: facade.getAllDepartments ? facade.getAllDepartments() : [],
     });
   },
 
@@ -138,6 +153,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ students: facade.getAllStudents() });
   },
 
+  toggleUserLock: (email) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.toggleUserLock(email);
+    if (success) {
+      set({ students: facade.getAllStudents() });
+    }
+    return success;
+  },
+
   // --- Course Actions ---
 
   addCourse: (data) => {
@@ -154,6 +179,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!requireRoles(['Admin'])) return false;
     const facade = AppFacade.getInstance();
     const success = facade.updateCourseInstructor(courseId, newInstructor);
+    if (success) {
+      set({ courses: facade.getAllCourses() });
+    }
+    return success;
+  },
+
+  updateCourse: (courseId, data) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.updateCourse(courseId, data);
     if (success) {
       set({ courses: facade.getAllCourses() });
     }
@@ -211,6 +246,56 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (success) {
       set({ grades: facade.getAllGrades() });
     }
+    return success;
+  },
+
+  // --- Department Actions ---
+
+  addDepartment: (data) => {
+    if (!requireRoles(['Admin'])) return { success: false, errors: ['Unauthorized Action'] };
+    const facade = AppFacade.getInstance();
+    const result = facade.createDepartment(data);
+    if (result.success) {
+      set({ departments: facade.getAllDepartments() });
+    }
+    return result;
+  },
+
+  updateDepartment: (id, data) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.updateDepartment(id, data);
+    if (success) {
+      set({ departments: facade.getAllDepartments() });
+    }
+    return success;
+  },
+
+  deleteDepartment: (id) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.deleteDepartment(id);
+    if (success) {
+      set({ departments: facade.getAllDepartments() });
+    }
+    return success;
+  },
+
+  // --- User Actions ---
+  toggleUserLock: (email) => {
+    if (!requireRoles(['Admin'])) return false;
+    // Needs implementation in AppFacade, assuming it exists
+    const facade = AppFacade.getInstance();
+    const success = (facade as any).toggleUserLock ? (facade as any).toggleUserLock(email) : false;
+    if (success) {
+      set({ students: facade.getAllStudents() });
+    }
+    return success;
+  },
+
+  updateUserProfile: async (email, data) => {
+    const facade = AppFacade.getInstance();
+    const success = (facade as any).updateUserProfile ? await (facade as any).updateUserProfile(email, data) : false;
     return success;
   },
 }));

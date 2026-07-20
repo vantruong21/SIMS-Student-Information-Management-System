@@ -1,8 +1,9 @@
-import { StudentRepository, CourseRepository, UserRepository, EnrollmentRepository, GradeRepository } from '../repositories/EntityRepositories';
+import { StudentRepository, CourseRepository, UserRepository, EnrollmentRepository, GradeRepository, DepartmentRepository } from '../repositories/EntityRepositories';
 import { EventBus } from '../observers/EventBus';
 import { StudentModel, Program } from '../models/Student';
 import { CourseModel } from '../models/Course';
 import { UserModel } from '../models/User';
+import { DepartmentModel } from '../models/Department';
 import { EntityFactory } from '../factories/EntityFactory';
 import { StudentDataValidationStrategy, PasswordValidationStrategy, EmailValidationStrategy } from '../strategies/ValidationStrategy';
 import { IAuthService, AuthResult } from '../interfaces/IAuthService';
@@ -29,6 +30,7 @@ export class AppFacade {
   private userRepo: UserRepository;
   private enrollmentRepo: EnrollmentRepository;
   private gradeRepo: GradeRepository;
+  private departmentRepo: DepartmentRepository;
 
   // Validators
   private studentValidator: StudentDataValidationStrategy;
@@ -44,6 +46,7 @@ export class AppFacade {
     this.userRepo = new UserRepository();
     this.enrollmentRepo = new EnrollmentRepository();
     this.gradeRepo = new GradeRepository();
+    this.departmentRepo = new DepartmentRepository();
     this.studentValidator = new StudentDataValidationStrategy();
     this.passwordValidator = new PasswordValidationStrategy();
     this.emailValidator = new EmailValidationStrategy();
@@ -145,6 +148,38 @@ export class AppFacade {
   }
 
   // ============================
+  // USER OPERATIONS
+  // ============================
+
+  public toggleUserLock(email: string): boolean {
+    const user = this.userRepo.findByEmail(email);
+    if (!user) return false;
+    user.toggleLock();
+    this.userRepo.update(user.id, user);
+    return true;
+  }
+
+  public async updateUserProfile(email: string, data: { phone?: string; password?: string }): Promise<boolean> {
+    const user = this.userRepo.findByEmail(email);
+    if (!user) return false;
+    
+    if (data.phone !== undefined) {
+      user.updatePhone(data.phone);
+    }
+    if (data.password) {
+      const hash = await this.hashPassword(data.password);
+      (user as any)._passwordHash = hash;
+      user.touch();
+    }
+    
+    this.userRepo.update(user.id, user);
+    
+    // Publish update
+    this.eventBus.publish(AppEvents.USER_LOGGED_IN, user.toProfile());
+    return true;
+  }
+
+  // ============================
   // STUDENT OPERATIONS
   // ============================
 
@@ -235,6 +270,41 @@ export class AppFacade {
   }
 
   // ============================
+  // DEPARTMENT OPERATIONS
+  // ============================
+
+  public getAllDepartments() {
+    return this.departmentRepo.getAll().map(d => d.toPlainObject());
+  }
+
+  public createDepartment(data: { name: string; head: string; description: string; facultyCount?: number }) {
+    try {
+      const dept = EntityFactory.createDepartment(data);
+      this.departmentRepo.create(dept);
+      return { success: true, departmentId: dept.id };
+    } catch (err: any) {
+      return { success: false, errors: [err.message] };
+    }
+  }
+
+  public updateDepartment(id: string, data: Partial<{ name: string; head: string; description: string; facultyCount: number }>): boolean {
+    const dept = this.departmentRepo.getById(id);
+    if (!dept) return false;
+    
+    if (data.name !== undefined) dept.name = data.name;
+    if (data.head !== undefined) dept.head = data.head;
+    if (data.description !== undefined) dept.description = data.description;
+    if (data.facultyCount !== undefined) dept.facultyCount = data.facultyCount;
+    
+    this.departmentRepo.update(id, dept);
+    return true;
+  }
+
+  public deleteDepartment(id: string): boolean {
+    return this.departmentRepo.delete(id);
+  }
+
+  // ============================
   // COURSE OPERATIONS
   // ============================
 
@@ -268,6 +338,22 @@ export class AppFacade {
       this.eventBus.publish(AppEvents.COURSE_DELETED, courseId);
     }
     return success;
+  }
+
+  public updateCourse(courseId: string, data: Partial<{ name: string; instructor: string; schedule: string; credits: number; capacity: number; department: string }>): boolean {
+    const course = this.courseRepo.getById(courseId);
+    if (!course) return false;
+    
+    if (data.name !== undefined) course.name = data.name;
+    if (data.instructor !== undefined) course.instructor = data.instructor;
+    if (data.schedule !== undefined) course.schedule = data.schedule;
+    if (data.credits !== undefined) course.credits = data.credits;
+    if (data.capacity !== undefined) course.capacity = data.capacity;
+    if (data.department !== undefined) course.department = data.department;
+
+    this.courseRepo.update(courseId, course);
+    this.eventBus.publish(AppEvents.COURSE_UPDATED, course.toPlainObject());
+    return true;
   }
 
   public updateCourseInstructor(courseId: string, newInstructor: string): boolean {
@@ -406,6 +492,17 @@ export class AppFacade {
       this.userRepo.create(admin);
       this.userRepo.create(faculty);
       this.userRepo.create(student);
+    }
+
+    // Seed departments if empty
+    if (this.departmentRepo.count() === 0) {
+      const depts = [
+        EntityFactory.createDepartment({ name: 'Khoa Công nghệ Thông tin', head: 'Dr. Turing', description: 'Đào tạo kỹ sư phần mềm, khoa học máy tính và AI.', facultyCount: 45 }),
+        EntityFactory.createDepartment({ name: 'Khoa Kinh tế Quản trị', head: 'Prof. Miller', description: 'Quản trị kinh doanh, Marketing và Tài chính.', facultyCount: 30 }),
+        EntityFactory.createDepartment({ name: 'Khoa Thiết kế Đồ họa', head: 'Prof. Carter', description: 'Thiết kế UI/UX, Đồ họa 2D/3D và Truyền thông.', facultyCount: 25 }),
+        EntityFactory.createDepartment({ name: 'Khoa Ngoại ngữ', head: 'Dr. Jones', description: 'Đào tạo Ngôn ngữ Anh, Nhật, Hàn, Trung.', facultyCount: 40 }),
+      ];
+      depts.forEach(d => this.departmentRepo.create(d));
     }
 
     // Seed courses if empty

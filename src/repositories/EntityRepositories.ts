@@ -188,3 +188,19 @@ export class GradeRepository extends CsvRepository<GradeModel> {
     return before - remaining.length;
   }
 }
+
+import { DepartmentModel } from '../models/Department';
+
+export class DepartmentRepository extends CsvRepository<DepartmentModel> {
+  constructor() {
+    super('elevate_departments_csv');
+  }
+
+  protected fromCsvRow(row: string[]): DepartmentModel {
+    return DepartmentModel.fromCsvRow(row);
+  }
+
+  protected getCsvHeader(): string {
+    return DepartmentModel.getCsvHeader();
+  }
+}

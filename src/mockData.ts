@@ -1,6 +1,13 @@
-import { Student, Course, ScheduleEvent, UserProfile } from './types';
+import { Student, Course, ScheduleEvent, UserProfile, Department } from './types';
 
 export const DEFAULT_STUDENTS: Student[] = [];
+
+export const DEFAULT_DEPARTMENTS: Department[] = [
+  { id: 'dept-1', name: 'Khoa Công nghệ Thông tin', head: 'Dr. Turing', description: 'Đào tạo kỹ sư phần mềm, khoa học máy tính và AI.', facultyCount: 45 },
+  { id: 'dept-2', name: 'Khoa Kinh tế Quản trị', head: 'Prof. Miller', description: 'Quản trị kinh doanh, Marketing và Tài chính.', facultyCount: 30 },
+  { id: 'dept-3', name: 'Khoa Thiết kế Đồ họa', head: 'Prof. Carter', description: 'Thiết kế UI/UX, Đồ họa 2D/3D và Truyền thông.', facultyCount: 25 },
+  { id: 'dept-4', name: 'Khoa Ngoại ngữ', head: 'Dr. Jones', description: 'Đào tạo Ngôn ngữ Anh, Nhật, Hàn, Trung.', facultyCount: 40 },
+];
 
 export const DEFAULT_COURSES: Course[] = [
   { id: 'c-se1', code: 'SE101', name: 'Application Development', instructor: 'Dr. Smith', schedule: 'Mon/Wed 9:00 AM', status: 'In Progress', credits: 3 },

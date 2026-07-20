@@ -1,24 +1,35 @@
 import React, { useState } from 'react';
 import { User, ShieldAlert, FileText, Smartphone, MapPin, Check, Sparkles } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile as UserProfileType } from '../types';
 
-interface StudentProfileProps {
-  user: UserProfile;
-  onUpdateProfile: (user: UserProfile) => void;
+interface UserProfileProps {
+  user: UserProfileType;
+  onUpdateProfile: (data: { phone?: string; password?: string }) => void;
 }
 
-export const StudentProfile: React.FC<StudentProfileProps> = ({ user, onUpdateProfile }) => {
-  const [nameInput, setNameInput] = useState(user.name);
-  const [phoneInput, setPhoneInput] = useState('');
-  const [addressInput, setAddressInput] = useState('');
+export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile }) => {
+  const [phoneInput, setPhoneInput] = useState(user.phone || '');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+    
+    if (passwordInput && passwordInput !== confirmPassword) {
+      setErrorMsg('Passwords do not match');
+      return;
+    }
+
     onUpdateProfile({
-      ...user,
-      name: nameInput
+      phone: phoneInput,
+      password: passwordInput || undefined
     });
+
+    setPasswordInput('');
+    setConfirmPassword('');
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
@@ -84,26 +95,11 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ user, onUpdatePr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text"
-                    required
-                    value={nameInput}
-                    onChange={e => setNameInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-inner focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Contact Number</label>
                 <div className="relative">
                   <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input 
                     type="text"
-                    required
                     value={phoneInput}
                     onChange={e => setPhoneInput(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-inner focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm"
@@ -111,19 +107,38 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ user, onUpdatePr
                 </div>
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Permanent Address</label>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">New Password</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <ShieldAlert className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input 
-                    type="text"
-                    required
-                    value={addressInput}
-                    onChange={e => setAddressInput(e.target.value)}
+                    type="password"
+                    placeholder="Leave blank to keep current"
+                    value={passwordInput}
+                    onChange={e => setPasswordInput(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-inner focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm"
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Confirm New Password</label>
+                <div className="relative">
+                  <ShieldAlert className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-inner focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="md:col-span-2 text-xs text-red-500 font-bold ml-1">
+                  {errorMsg}
+                </div>
+              )}
 
             </div>
 

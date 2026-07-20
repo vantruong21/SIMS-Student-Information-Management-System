@@ -18,6 +18,8 @@ export class UserModel extends BaseEntity {
   private _lastLoginAt?: string;
   private _failedLoginAttempts: number;
   private _lockedUntil?: string;
+  private _isLocked: boolean;
+  private _phone?: string;
 
   constructor(
     id: string,
@@ -30,6 +32,8 @@ export class UserModel extends BaseEntity {
     lastLoginAt?: string,
     failedLoginAttempts: number = 0,
     lockedUntil?: string,
+    isLocked: boolean = false,
+    phone?: string,
     createdAt?: string,
     updatedAt?: string
   ) {
@@ -43,6 +47,8 @@ export class UserModel extends BaseEntity {
     this._lastLoginAt = lastLoginAt;
     this._failedLoginAttempts = failedLoginAttempts;
     this._lockedUntil = lockedUntil;
+    this._isLocked = isLocked;
+    this._phone = phone;
   }
 
   // --- Getters ---
@@ -53,8 +59,10 @@ export class UserModel extends BaseEntity {
   get avatarUrl(): string { return this._avatarUrl; }
   get isActive(): boolean { return this._isActive; }
   get lastLoginAt(): string | undefined { return this._lastLoginAt; }
-  get failedLoginAttempts(): number { return this._failedLoginAttempts; }
-  get lockedUntil(): string | undefined { return this._lockedUntil; }
+  public get failedLoginAttempts() { return this._failedLoginAttempts; }
+  public get lockedUntil() { return this._lockedUntil; }
+  public get isLocked() { return this._isLocked; }
+  public get phone() { return this._phone; }
 
   // --- Setters ---
   set name(value: string) {
@@ -95,8 +103,22 @@ export class UserModel extends BaseEntity {
    */
   public recordLogin(): void {
     this._lastLoginAt = new Date().toISOString();
+    this.resetLoginAttempts();
+  }
+
+  public resetLoginAttempts() {
     this._failedLoginAttempts = 0;
     this._lockedUntil = undefined;
+    this.touch();
+  }
+
+  public toggleLock() {
+    this._isLocked = !this._isLocked;
+    this.touch();
+  }
+
+  public updatePhone(phone: string) {
+    this._phone = phone;
     this.touch();
   }
 
@@ -178,13 +200,15 @@ export class UserModel extends BaseEntity {
       row[7] || undefined,
       parseInt(row[8]) || 0,
       row[9] || undefined,
-      row[10] || undefined,
-      row[11] || undefined
+      row[10] === 'true',
+      row[11] || undefined,
+      row[12] || undefined,
+      row[13] || undefined
     );
   }
 
   public static getCsvHeader(): string {
-    return '"id","name","email","role","passwordHash","avatarUrl","isActive","lastLoginAt","failedLoginAttempts","lockedUntil","createdAt","updatedAt"';
+    return '"id","name","email","role","passwordHash","avatarUrl","isActive","lastLoginAt","failedLoginAttempts","lockedUntil","isLocked","phone","createdAt","updatedAt"';
   }
 
   public toPlainObject() {
@@ -196,6 +220,8 @@ export class UserModel extends BaseEntity {
       avatarUrl: this._avatarUrl,
       isActive: this._isActive,
       lastLoginAt: this._lastLoginAt,
+      isLocked: this._isLocked,
+      phone: this._phone,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };
@@ -207,7 +233,8 @@ export class UserModel extends BaseEntity {
       name: this._name,
       role: this._role,
       email: this._email,
-      avatarUrl: this._avatarUrl
+      avatarUrl: this._avatarUrl,
+      phone: this._phone
     };
   }
 }

@@ -5,6 +5,8 @@ export interface User {
   role: 'Student' | 'Faculty' | 'Admin';
   avatarUrl?: string;
   createdAt?: string;
+  isLocked?: boolean;
+  phone?: string;
 }
 
 export interface Student {
@@ -17,6 +19,8 @@ export interface Student {
   gpa?: number;
   totalCredits?: number;
   grade?: string;
+  isLocked?: boolean;
+  phone?: string;
 }
 
 export interface Faculty {
@@ -28,6 +32,16 @@ export interface Faculty {
   coursesTaught: string[];
   avatarUrl?: string;
   status: 'Active' | 'On Leave';
+  isLocked?: boolean;
+  phone?: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  head: string;
+  description: string;
+  facultyCount: number;
 }
 
 export interface Course {
@@ -98,6 +112,7 @@ export interface UserProfile {
   role: 'Student' | 'Faculty' | 'Admin';
   email: string;
   avatarUrl: string;
+  phone?: string;
   gpa?: number;
   creditsCompleted?: number;
   totalCreditsNeeded?: number;

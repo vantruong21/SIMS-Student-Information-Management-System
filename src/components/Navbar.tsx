@@ -11,6 +11,7 @@ import {
   HelpCircle, 
   LogOut,
   Sparkles,
+  Building2,
   X
 } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -51,14 +52,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         { id: 'library', label: 'Lecture Library', icon: BookOpen },
         { id: 'analytics', label: 'Academic Analytics', icon: BarChart3 },
         { id: 'settings', label: 'Class Settings', icon: Settings },
+        { id: 'profile', label: 'My Profile', icon: User },
       ]
     : [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'students', label: 'Student Directory', icon: Users },
         { id: 'allocation', label: 'Smart Allocation', icon: Sparkles },
         { id: 'courses', label: 'Course Assignments', icon: BookOpen },
+        { id: 'departments', label: 'Departments', icon: Building2 },
         { id: 'analytics', label: 'System Analytics', icon: BarChart3 },
         { id: 'settings', label: 'System Settings', icon: Settings },
+        { id: 'profile', label: 'My Profile', icon: User },
       ];
 
   const handleTabClick = (tabId: string) => {

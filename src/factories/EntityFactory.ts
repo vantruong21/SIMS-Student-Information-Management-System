@@ -3,6 +3,7 @@ import { CourseModel, CourseStatus } from '../models/Course';
 import { UserModel, UserRole } from '../models/User';
 import { EnrollmentModel } from '../models/Enrollment';
 import { GradeModel } from '../models/Grade';
+import { DepartmentModel } from '../models/Department';
 
 /**
  * EntityFactory — Centralized Entity Creation
@@ -149,6 +150,24 @@ export class EntityFactory {
       studentId,
       courseId,
       0, 0, 0, ''
+    );
+  }
+
+  /**
+   * Creates a new Department entity.
+   */
+  public static createDepartment(data: {
+    name: string;
+    head: string;
+    description: string;
+    facultyCount?: number;
+  }): DepartmentModel {
+    return new DepartmentModel(
+      EntityFactory.generateId('DPT'),
+      data.name,
+      data.head,
+      data.description,
+      data.facultyCount || 0
     );
   }
 }

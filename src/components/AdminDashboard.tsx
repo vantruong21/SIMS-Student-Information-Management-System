@@ -5,6 +5,8 @@ import { useAppStore } from '../store/useAppStore';
 import { CommandDashboard } from './admin/CommandDashboard';
 import { UsersDataTable } from './admin/UsersDataTable';
 import { DualPanelAllocation } from './admin/DualPanelAllocation';
+import { AdminCourseManagement } from './admin/AdminCourseManagement';
+import { DepartmentManagement } from './admin/DepartmentManagement';
 
 interface AdminDashboardProps {
   searchQuery: string;
@@ -76,6 +78,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleAddLocalStudent = useCallback((student: Student) => {
     addStudent(student);
   }, [addStudent]);
+
+  const toggleUserLock = useAppStore(state => state.toggleUserLock);
+  const handleToggleLock = useCallback((email: string) => {
+    toggleUserLock(email);
+    showToast(`Successfully toggled lock status for user: ${email}`, 'success');
+  }, [showToast, toggleUserLock]);
   /*
     setLocalStudents(prev => [student, ...prev]);
   }, []);
@@ -118,6 +126,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onImportLocalStudents={handleImportLocalStudents}
             onApproveStudent={handleApproveStudent}
             onDeleteStudent={handleDeleteStudent}
+            onToggleLock={handleToggleLock}
             onShowToast={showToast}
           />
         );
@@ -128,6 +137,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             courses={courses}
             onShowToast={showToast}
           />
+        );
+      case 'courses':
+        return (
+          <AdminCourseManagement courses={courses} />
+        );
+      case 'departments':
+        return (
+          <DepartmentManagement />
         );
       default:
         return (
