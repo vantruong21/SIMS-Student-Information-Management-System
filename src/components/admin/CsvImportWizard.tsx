@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -44,6 +45,14 @@ export const CsvImportWizard: React.FC<CsvImportWizardProps> = ({
   const [validCount, setValidCount] = useState(0);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: validationErrors.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
 
   if (!isOpen) return null;
 
@@ -397,18 +406,39 @@ export const CsvImportWizard: React.FC<CsvImportWizardProps> = ({
                     <span>Schema Warning Logs</span>
                   </div>
                   
-                  <div className="max-h-[140px] overflow-y-auto divide-y divide-rose-100/30 px-4">
-                    {validationErrors.map((err, i) => (
-                      <div key={i} className="py-2.5 text-[11px] text-gray-600 font-semibold flex items-center justify-between gap-4">
-                        <div className="text-left">
-                          <span className="font-mono bg-rose-50 border border-rose-100 text-rose-700 text-[9px] px-1.5 py-0.5 rounded mr-2">
-                            Row {err.row}
-                          </span>
-                          <span>Failed parsing column: <strong className="text-indigo-950 font-extrabold">{err.field}</strong></span>
-                        </div>
-                        <span className="text-rose-600 font-semibold italic">{err.message}</span>
-                      </div>
-                    ))}
+                  <div 
+                    ref={scrollRef}
+                    className="max-h-[140px] overflow-y-auto px-4 custom-scrollbar"
+                  >
+                    <div
+                      style={{
+                        height: `${rowVirtualizer.getTotalSize()}px`,
+                        width: '100%',
+                        position: 'relative',
+                      }}
+                    >
+                      {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                        const err = validationErrors[virtualRow.index];
+                        return (
+                          <div 
+                            key={virtualRow.index}
+                            className="absolute top-0 left-0 w-full flex items-center justify-between gap-4 py-2 border-b border-rose-100/30 text-[11px] text-gray-600 font-semibold"
+                            style={{
+                              height: `${virtualRow.size}px`,
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                          >
+                            <div className="text-left flex items-center gap-2">
+                              <span className="font-mono bg-rose-50 border border-rose-100 text-rose-700 text-[9px] px-1.5 py-0.5 rounded">
+                                Row {err.row}
+                              </span>
+                              <span>Failed parsing column: <strong className="text-indigo-950 font-extrabold">{err.field}</strong></span>
+                            </div>
+                            <span className="text-rose-600 font-semibold italic">{err.message}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

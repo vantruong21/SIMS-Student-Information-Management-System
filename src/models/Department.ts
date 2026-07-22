@@ -22,6 +22,14 @@ export class DepartmentModel extends BaseEntity {
     this._facultyCount = facultyCount;
   }
 
+  // --- Validation ---
+  public validate(): string[] {
+    const errors: string[] = [];
+    if (this._name.trim().length === 0) errors.push('Name is required');
+    if (this._head.trim().length === 0) errors.push('Head is required');
+    return errors;
+  }
+
   // --- Getters ---
   get name(): string { return this._name; }
   get head(): string { return this._head; }

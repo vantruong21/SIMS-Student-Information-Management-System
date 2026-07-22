@@ -182,6 +182,8 @@ export class UserModel extends BaseEntity {
       this._lastLoginAt || '',
       this._failedLoginAttempts.toString(),
       this._lockedUntil || '',
+      this._isLocked ? 'true' : 'false',
+      this._phone || '',
       this.createdAt,
       this.updatedAt
     ];
@@ -234,7 +236,9 @@ export class UserModel extends BaseEntity {
       role: this._role,
       email: this._email,
       avatarUrl: this._avatarUrl,
-      phone: this._phone
+      phone: this._phone,
+      isActive: this._isActive,
+      isLocked: this._isLocked
     };
   }
 }

@@ -10,7 +10,7 @@ import { StudentModel } from '../models/Student';
  */
 export class StudentRepository extends CsvRepository<StudentModel> {
   constructor() {
-    super('elevate_students_csv');
+    super('elevate_students_v2');
   }
 
   protected fromCsvRow(row: string[]): StudentModel {
@@ -64,7 +64,7 @@ import { CourseModel } from '../models/Course';
 
 export class CourseRepository extends CsvRepository<CourseModel> {
   constructor() {
-    super('elevate_courses_csv');
+    super('elevate_courses_v2');
   }
 
   protected fromCsvRow(row: string[]): CourseModel {
@@ -88,7 +88,7 @@ import { UserModel } from '../models/User';
 
 export class UserRepository extends CsvRepository<UserModel> {
   constructor() {
-    super('elevate_users_csv');
+    super('elevate_users_v2');
   }
 
   protected fromCsvRow(row: string[]): UserModel {
@@ -112,7 +112,7 @@ import { EnrollmentModel } from '../models/Enrollment';
 
 export class EnrollmentRepository extends CsvRepository<EnrollmentModel> {
   constructor() {
-    super('elevate_enrollments_csv');
+    super('elevate_enrollments_v2');
   }
 
   protected fromCsvRow(row: string[]): EnrollmentModel {
@@ -158,7 +158,7 @@ import { GradeModel } from '../models/Grade';
 
 export class GradeRepository extends CsvRepository<GradeModel> {
   constructor() {
-    super('elevate_grades_csv');
+    super('elevate_grades_v2');
   }
 
   protected fromCsvRow(row: string[]): GradeModel {
@@ -193,7 +193,7 @@ import { DepartmentModel } from '../models/Department';
 
 export class DepartmentRepository extends CsvRepository<DepartmentModel> {
   constructor() {
-    super('elevate_departments_csv');
+    super('elevate_departments_v2');
   }
 
   protected fromCsvRow(row: string[]): DepartmentModel {

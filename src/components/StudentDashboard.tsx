@@ -13,8 +13,12 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { useAppStore } from '../store/useAppStore';
 import { SmartAlertBanner } from './SmartAlertBanner';
 import { GlassEmptyState } from './GlassEmptyState';
+import { GlassPanel } from './ui/GlassPanel';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
 
 interface StudentDashboardProps {
   user: UserProfile;
@@ -26,18 +30,26 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   user,
   onNavigateTab
 }) => {
-  // Static beautiful institutional announcements list - cleared as requested
+  const { enrollments, courses, grades, students } = useAppStore();
   const announcements: any[] = [];
+  
+  // Calculate dynamic data
+  const myEnrollments = enrollments.filter(e => e.studentId === user.id);
+  const myCourses = myEnrollments.map(e => courses.find(c => c.id === e.courseId)).filter(Boolean) as any[];
+  
+  const creditsCompleted = myCourses.reduce((acc, c) => acc + (c.credits || 0), 0);
+  
+  // Calculate real GPA from grades
+  const studentInfo = students.find(s => s.id === user.id);
+  const gpa = studentInfo?.gpa || 0; // The AppFacade already syncs GPA to studentInfo, but we can also recalculate if needed, let's use studentInfo for now, or just the user's gpa if not found
+  const displayGpa = studentInfo?.gpa ?? user.gpa ?? 0;
 
   return (
     <div className="space-y-6 text-gray-800 animate-in fade-in duration-500">
       
-      {/* Dynamic Smart Alert Banner at the absolute top */}
       <SmartAlertBanner onNavigateToModules={() => onNavigateTab('modules')} />
 
-      {/* 1. Hero Banner Section */}
       <section className="relative overflow-hidden rounded-3xl min-h-[220px] bg-gradient-to-br from-indigo-600/10 via-indigo-400/5 to-cyan-400/10 border border-white/60 p-6 md:p-8 flex items-center shadow-sm">
-        {/* Decorative vectors */}
         <div className="absolute right-6 lg:right-12 top-1/2 -translate-y-1/2 text-indigo-100 opacity-40 pointer-events-none select-none hidden md:block animate-float-slow">
           <GraduationCap className="w-48 h-48" strokeWidth={0.5} />
         </div>
@@ -45,12 +57,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           <BookMarked className="w-28 h-28" strokeWidth={0.8} />
         </div>
 
-        {/* Banner Copy */}
         <div className="relative z-10 max-w-xl text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 text-indigo-600 text-xs font-bold mb-4 backdrop-blur-md border border-white/50">
-            <Award className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Fall 2024 Academic Semester</span>
-          </div>
+          <Badge variant="info" icon={Award} className="mb-4 bg-white/60 backdrop-blur-md border border-white/50 px-3 py-1 text-indigo-600">
+            Fall 2024 Academic Semester
+          </Badge>
           <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-indigo-950 mb-3 leading-tight">
             Welcome back, {user.name}!
           </h3>
@@ -58,26 +68,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             Your academic statistics, course calendars, and semester modules are compiled in real-time. Stay on top of your attendance compliance and track your progress.
           </p>
           <div className="flex flex-wrap gap-3">
-            <button 
-              onClick={() => onNavigateTab('modules')}
-              className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-[0_8px_16px_rgba(79,70,229,0.15)] hover:shadow-[0_12px_24px_rgba(79,70,229,0.25)] transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 active:scale-95 cursor-pointer"
-            >
+            <Button variant="primary" onClick={() => onNavigateTab('modules')}>
               <span>Track Current Modules</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => onNavigateTab('records')}
-              className="bg-white/80 hover:bg-white text-indigo-950 px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm border border-gray-200 hover:border-gray-300 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => onNavigateTab('records')}>
               <span>View Transcripts</span>
-            </button>
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* 2. Academic Stats Grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* GPA Box */}
         <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-md transition-shadow text-left">
           <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/5 rounded-full -translate-y-1/3 translate-x-1/3 group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between mb-4">
@@ -87,7 +89,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </span>
           </div>
           <div className="font-display text-3xl md:text-4xl font-extrabold text-indigo-950">
-            {user.gpa?.toFixed(2)}
+            {displayGpa.toFixed(2)}
           </div>
           <div className="text-[11px] text-emerald-600 font-bold mt-2 flex items-center gap-1">
             <span>+0.05</span>
@@ -95,7 +97,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
 
-        {/* Credits completed */}
         <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-md transition-shadow text-left">
           <div className="absolute top-0 right-0 w-28 h-28 bg-cyan-500/5 rounded-full -translate-y-1/3 translate-x-1/3 group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between mb-4">
@@ -105,14 +106,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </span>
           </div>
           <div className="font-display text-3xl md:text-4xl font-extrabold text-indigo-950">
-            {user.creditsCompleted}
+            {creditsCompleted}
           </div>
           <div className="text-[11px] text-gray-500 font-medium mt-2">
-            Requires <span className="font-bold text-indigo-600">{((user.totalCreditsNeeded ?? 140) - (user.creditsCompleted ?? 124))} credits</span> to graduate (Target: 140)
+            Requires <span className="font-bold text-indigo-600">{Math.max(0, 140 - creditsCompleted)} credits</span> to graduate (Target: 140)
           </div>
         </div>
 
-        {/* Next class card */}
         <div className="glass-card rounded-2xl p-5 relative overflow-hidden group sm:col-span-2 lg:col-span-1 hover:shadow-md transition-shadow text-left">
           <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full -translate-y-1/3 translate-x-1/3 group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between mb-4">
@@ -135,16 +135,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         </div>
       </section>
 
-      {/* 3. Modern Institutional Announcements list */}
-      <section className="glass-panel rounded-3xl p-6 shadow-sm border border-white/50 text-left">
+      <GlassPanel className="text-left">
         <div className="flex items-center justify-between pb-3 border-b border-indigo-50 mb-5">
           <div className="flex items-center gap-2">
             <Bell className="w-4.5 h-4.5 text-indigo-600" />
             <h4 className="font-display text-sm font-bold text-indigo-950">Campus Announcements</h4>
           </div>
-          <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2.5 py-0.5 rounded-full">
+          <Badge variant="info">
             {announcements.length} updates
-          </span>
+          </Badge>
         </div>
 
         <div className="space-y-4">
@@ -156,13 +155,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                      ann.important 
-                        ? 'bg-red-50 text-red-600 border border-red-100' 
-                        : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                    }`}>
+                    <Badge variant={ann.important ? 'error' : 'info'}>
                       {ann.category}
-                    </span>
+                    </Badge>
                     <span className="text-[10px] text-gray-400 font-mono flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {ann.time}
@@ -176,12 +171,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   </p>
                 </div>
 
-                <button 
-                  className="self-start md:self-center text-indigo-600 hover:text-indigo-700 text-xs font-bold flex items-center gap-0.5 whitespace-nowrap cursor-pointer hover:underline"
-                >
+                <Button variant="ghost" className="self-start md:self-center" onClick={() => {}}>
                   <span>Read document</span>
                   <ChevronRight className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             ))
           ) : (
@@ -191,7 +184,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             />
           )}
         </div>
-      </section>
+      </GlassPanel>
 
     </div>
   );

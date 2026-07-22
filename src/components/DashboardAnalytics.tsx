@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 import { BarChart3, TrendingUp, PieChart as PieIcon, LineChart as LineIcon, GraduationCap } from 'lucide-react';
 import { UserProfile } from '../types';
-import { useAttendanceStore } from '../store/useAttendanceStore';
+import { useAppStore } from '../store/useAppStore';
 import { GlassEmptyState } from './GlassEmptyState';
 
 interface DashboardAnalyticsProps {
@@ -25,23 +25,38 @@ interface DashboardAnalyticsProps {
 
 export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({ user }) => {
   const isStudent = user.role === 'Student';
-  const { subjects, requests } = useAttendanceStore();
-  const hasNoData = isStudent ? subjects.length === 0 : requests.length === 0;
+  const { students } = useAppStore();
+  const hasNoData = isStudent ? false : students.length === 0;
 
-  // Mock data for Admin analytics
-  const adminProgramData = [
-    { name: 'Software Engineering', students: 4850, fill: '#4f46e5' },
-    { name: 'Marketing', students: 3120, fill: '#06b6d4' },
-    { name: 'Graphic Design', students: 1650, fill: '#8b5cf6' }
-  ];
+  // Real data for Admin analytics
+  const programCounts: Record<string, number> = {};
+  students.forEach(s => {
+    programCounts[s.program] = (programCounts[s.program] || 0) + 1;
+  });
+  
+  const adminProgramData = Object.entries(programCounts).map(([name, count], index) => {
+    const colors = ['#4f46e5', '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981'];
+    return { name, students: count, fill: colors[index % colors.length] };
+  });
 
-  const adminGPAData = [
-    { range: '3.6 - 4.0', count: 4250 },
-    { range: '3.2 - 3.5', count: 5120 },
-    { range: '2.8 - 3.1', count: 2150 },
-    { range: '2.4 - 2.7', count: 680 },
-    { range: '< 2.4', count: 250 },
-  ];
+  const gpaCounts = {
+    '3.6 - 4.0': 0,
+    '3.2 - 3.5': 0,
+    '2.8 - 3.1': 0,
+    '2.4 - 2.7': 0,
+    '< 2.4': 0,
+  };
+  
+  students.forEach(s => {
+    const gpa = s.gpa || 0;
+    if (gpa >= 3.6) gpaCounts['3.6 - 4.0']++;
+    else if (gpa >= 3.2) gpaCounts['3.2 - 3.5']++;
+    else if (gpa >= 2.8) gpaCounts['2.8 - 3.1']++;
+    else if (gpa >= 2.4) gpaCounts['2.4 - 2.7']++;
+    else gpaCounts['< 2.4']++;
+  });
+
+  const adminGPAData = Object.entries(gpaCounts).map(([range, count]) => ({ range, count }));
 
   const adminSystemActivity = [
     { day: 'Mon', requests: 45000, uptime: 99.92 },

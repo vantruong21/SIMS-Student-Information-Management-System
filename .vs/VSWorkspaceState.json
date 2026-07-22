@@ -2,8 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\assets",
-    "\\src"
+    "\\src",
+    "\\src\\components"
   ],
-  "SelectedNode": "\\run-website.bat",
   "PreviewInSolutionExplorer": false
 }

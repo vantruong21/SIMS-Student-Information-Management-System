@@ -127,6 +127,7 @@ export const AppEvents = {
 
   // Course events
   COURSE_CREATED: 'course:created',
+  COURSE_UPDATED: 'course:updated',
   COURSE_DELETED: 'course:deleted',
   STUDENT_ENROLLED: 'course:student_enrolled',
   STUDENT_UNENROLLED: 'course:student_unenrolled',

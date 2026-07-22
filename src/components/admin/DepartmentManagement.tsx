@@ -1,29 +1,35 @@
 import React, { useState } from 'react';
 import { Department } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
-import { Building2, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
+import { Building2, Plus, Edit2, Trash2 } from 'lucide-react';
+import { GlassPanel } from '../ui/GlassPanel';
+import { Button } from '../ui/Button';
+import { DataTable, Column } from '../ui/DataTable';
+import { Modal } from '../ui/Modal';
+import { Badge } from '../ui/Badge';
 
 export const DepartmentManagement: React.FC = () => {
   const departments = useAppStore(state => state.departments);
+  const faculty = useAppStore(state => state.faculty);
+  const activeFaculty = faculty.filter(f => f.isActive !== false);
   const addDepartment = useAppStore(state => state.addDepartment);
   const updateDepartment = useAppStore(state => state.updateDepartment);
   const deleteDepartment = useAppStore(state => state.deleteDepartment);
   
-  const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
-    name: '', head: '', description: '', facultyCount: 0
+    name: '', head: activeFaculty[0]?.name || 'Staff Academic', description: '', facultyCount: 0
   });
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    addDepartment(formData);
-    setIsCreating(false);
-    setFormData({ name: '', head: '', description: '', facultyCount: 0 });
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    setFormData({ name: '', head: activeFaculty[0]?.name || 'Staff Academic', description: '', facultyCount: 0 });
+    setIsModalOpen(true);
   };
 
-  const handleEdit = (dept: Department) => {
+  const handleOpenEdit = (dept: Department) => {
     setEditingId(dept.id);
     setFormData({
       name: dept.name,
@@ -31,103 +37,129 @@ export const DepartmentManagement: React.FC = () => {
       description: dept.description,
       facultyCount: dept.facultyCount || 0
     });
+    setIsModalOpen(true);
   };
 
-  const handleSaveEdit = (deptId: string) => {
-    updateDepartment(deptId, formData);
-    setEditingId(null);
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingId) {
+      updateDepartment(editingId, formData);
+    } else {
+      addDepartment(formData);
+    }
+    setIsModalOpen(false);
   };
+
+  const columns: Column<Department>[] = [
+    {
+      header: 'Department',
+      key: 'name',
+      render: (dept) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="font-bold text-indigo-950">{dept.name}</div>
+            <div className="text-xs text-gray-500 w-48 truncate">{dept.description}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Head of Department',
+      key: 'head',
+      render: (dept) => (
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-700 flex items-center justify-center font-bold text-[10px]">
+            {dept.head.split(' ').map(n => n[0]).join('').substring(0,2)}
+          </div>
+          <span className="font-semibold text-gray-700 text-sm">{dept.head}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Faculty Count',
+      key: 'facultyCount',
+      render: (dept) => (
+        <Badge variant="info">{dept.facultyCount || 0} Members</Badge>
+      )
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      className: 'text-right',
+      render: (dept) => (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(dept)}>
+            <Edit2 className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-rose-500 hover:text-rose-600 hover:bg-rose-50" onClick={() => deleteDepartment(dept.id)}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )
+    }
+  ];
 
   return (
-    <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 text-left animate-in fade-in duration-500">
-      <div className="flex justify-between items-start">
-        <div>
-          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
-            Academic Infrastructure
-          </span>
-          <h3 className="font-display text-lg font-bold text-indigo-950 mt-2">Department Management</h3>
-          <p className="text-xs text-gray-500 mt-1">Manage academic departments, heads of department, and operational scale.</p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <GlassPanel>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              Academic Infrastructure
+            </span>
+            <h3 className="font-display text-lg font-bold text-indigo-950 mt-2">Department Management</h3>
+            <p className="text-xs text-gray-500 mt-1">Manage academic departments, heads of department, and operational scale.</p>
+          </div>
+          <Button variant="primary" icon={Plus} onClick={handleOpenCreate}>
+            Add Department
+          </Button>
         </div>
-        <button 
-          onClick={() => setIsCreating(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Add Department
-        </button>
-      </div>
 
-      {isCreating && (
-        <form onSubmit={handleCreate} className="p-5 bg-white/60 border border-white rounded-2xl space-y-4">
-          <h4 className="text-sm font-bold text-indigo-950 border-b border-indigo-100 pb-2">New Department Setup</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium">
+        <DataTable 
+          data={departments}
+          columns={columns}
+          keyField="id"
+          pageSize={10}
+        />
+      </GlassPanel>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title={editingId ? 'Edit Department' : 'New Department Setup'}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-500 mb-1">Department Name</label>
-              <input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 outline-none focus:border-indigo-400" placeholder="e.g. Computer Science" />
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Department Name</label>
+              <input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm" placeholder="e.g. Computer Science" />
             </div>
             <div>
-              <label className="block text-gray-500 mb-1">Head of Department</label>
-              <input required value={formData.head} onChange={e=>setFormData({...formData, head: e.target.value})} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 outline-none focus:border-indigo-400" placeholder="e.g. Dr. Turing" />
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Head of Department</label>
+              <select value={formData.head} onChange={e=>setFormData({...formData, head: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm cursor-pointer">
+                <option value="Staff Academic">Staff Academic</option>
+                {activeFaculty.map(f => <option key={f.id} value={f.name}>{f.name}</option>)}
+              </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-gray-500 mb-1">Description</label>
-              <input required value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 outline-none focus:border-indigo-400" />
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Description</label>
+              <input required value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm" placeholder="Focuses on computational theory..." />
             </div>
             <div>
-              <label className="block text-gray-500 mb-1">Faculty Count</label>
-              <input required type="number" value={formData.facultyCount} onChange={e=>setFormData({...formData, facultyCount: parseInt(e.target.value)})} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 outline-none focus:border-indigo-400" />
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Faculty Count</label>
+              <input required type="number" min="0" value={formData.facultyCount} onChange={e=>setFormData({...formData, facultyCount: parseInt(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm" />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">Cancel</button>
-            <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors cursor-pointer">Create Department</button>
+          <div className="pt-4 flex gap-3 justify-end">
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="primary">Save Department</Button>
           </div>
         </form>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {departments.map((dept: Department) => {
-          const isEditing = editingId === dept.id;
-
-          if (isEditing) {
-            return (
-              <div key={dept.id} className="p-5 rounded-2xl bg-white border border-indigo-200 shadow-sm space-y-3">
-                <input value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-2 py-1.5 rounded bg-gray-50 border border-gray-200 text-sm font-bold" />
-                <input value={formData.head} onChange={e=>setFormData({...formData, head: e.target.value})} className="w-full px-2 py-1.5 rounded bg-gray-50 border border-gray-200 text-xs" />
-                <textarea value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="w-full px-2 py-1.5 rounded bg-gray-50 border border-gray-200 text-xs h-20 resize-none" />
-                <input type="number" value={formData.facultyCount} onChange={e=>setFormData({...formData, facultyCount: parseInt(e.target.value)})} className="w-full px-2 py-1.5 rounded bg-gray-50 border border-gray-200 text-xs" />
-                
-                <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-                  <button onClick={() => setEditingId(null)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"><X className="w-4 h-4" /></button>
-                  <button onClick={() => handleSaveEdit(dept.id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"><Save className="w-4 h-4" /></button>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={dept.id} className="group p-5 rounded-2xl bg-white/60 border border-white hover:bg-white transition-all shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleEdit(dept)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"><Edit2 className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => { if(window.confirm('Delete department?')) deleteDepartment(dept.id); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
-                  </div>
-                </div>
-                <h4 className="font-display font-bold text-indigo-950">{dept.name}</h4>
-                <p className="text-xs font-medium text-indigo-600 mt-1">Head: {dept.head}</p>
-                <p className="text-xs text-gray-500 mt-2 line-clamp-3 leading-relaxed">{dept.description}</p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-indigo-50 flex items-center justify-between text-[11px] text-gray-400 font-bold">
-                <span>{dept.facultyCount} Faculty Members</span>
-                <span>Active</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      </Modal>
     </div>
   );
 };

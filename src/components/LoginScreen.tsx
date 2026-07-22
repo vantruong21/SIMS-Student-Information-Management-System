@@ -261,18 +261,7 @@ export const LoginScreen: React.FC = () => {
             </button>
           </div>
 
-          {/* Credential hints for demo */}
-          <div className="mt-4 p-3 rounded-xl bg-indigo-50/50 border border-indigo-100/50 text-left space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600">
-              <Info className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Demo Credentials</span>
-            </div>
-            <div className="text-[10px] text-gray-500 font-mono space-y-0.5">
-              <p><span className="font-bold text-indigo-950">Student:</span> scholar@elevate.edu / Student@123</p>
-              <p><span className="font-bold text-indigo-950">Faculty:</span> feynman@elevate.edu / Faculty@123</p>
-              <p><span className="font-bold text-indigo-950">Admin:</span> admin@elevate.edu / Admin@123</p>
-            </div>
-          </div>
+
 
           {/* Bottom link */}
           <div className="text-center pt-3">

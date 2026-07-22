@@ -4,10 +4,12 @@ import {
   Clock, 
   MapPin, 
   Bookmark, 
-  Play,
-  ArrowRight
+  Play
 } from 'lucide-react';
 import { Course } from '../../types';
+import { GlassPanel } from '../ui/GlassPanel';
+import { Badge } from '../ui/Badge';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface FacultyScheduleProps {
   courses: Course[];
@@ -19,16 +21,19 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
   ];
 
-  // Map courses into a weekly schedule (demo logic matching student schedule)
-  const scheduleEvents = courses.map((c, idx) => {
+  const user = useAuthStore(state => state.user);
+
+  const facultyCourses = courses.filter(c => c.instructor === user?.name);
+
+  const scheduleEvents = facultyCourses.map((c, idx) => {
     const day = daysOfWeek[idx % daysOfWeek.length];
     return {
-      id: `evt-${c.id}`,
+      id: c.id,
       courseName: c.name,
       courseCode: c.code,
       day,
-      time: '10:00 AM - 12:00 PM', // Demo time
-      room: 'Room ' + (300 + idx),
+      time: c.schedule || '10:00 AM - 12:00 PM',
+      room: 'Main Campus ' + (300 + idx),
     };
   });
 
@@ -52,24 +57,22 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
           {daysOfWeek.map((day) => {
             const dayEvents = scheduleEvents.filter(e => e.day === day);
-            const isToday = day === 'Friday'; // Hardcoded Friday as "today" for demo glow
+            const isToday = day === 'Friday';
 
             return (
-              <div 
+              <GlassPanel 
                 key={day} 
-                className={`glass-panel rounded-3xl p-4 flex flex-col gap-4 min-h-[300px] border transition-all ${
-                  isToday 
-                    ? 'border-indigo-300 shadow-[0_8px_32px_rgba(79,70,229,0.08)] bg-white/70' 
-                    : 'border-white/50 bg-white/30'
+                className={`flex flex-col gap-4 min-h-[300px] transition-all p-4 ${
+                  isToday ? 'border-indigo-300 shadow-[0_8px_32px_rgba(79,70,229,0.08)] bg-white/70' : ''
                 }`}
               >
                 <div className="pb-3 border-b border-indigo-100/60 flex items-center justify-between">
                   <span className={`font-display font-extrabold text-sm ${isToday ? 'text-indigo-600' : 'text-indigo-950'}`}>
                     {day}
                   </span>
-                  <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">
+                  <Badge variant="info">
                     {dayEvents.length} {dayEvents.length === 1 ? 'class' : 'classes'}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="space-y-3 flex-1 overflow-y-auto pr-0.5">
@@ -129,7 +132,7 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
                     </div>
                   )}
                 </div>
-              </div>
+              </GlassPanel>
             );
           })}
         </div>

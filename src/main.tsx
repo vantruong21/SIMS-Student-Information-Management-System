@@ -15,10 +15,7 @@ import { NetworkErrorBoundary } from './components/NetworkErrorBoundary';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ToastProvider>
-        <NetworkErrorBoundary />
-        <App />
-      </ToastProvider>
+      <App />
     </ErrorBoundary>
   </React.StrictMode>,
 );

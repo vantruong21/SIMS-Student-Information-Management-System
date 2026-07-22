@@ -38,22 +38,40 @@ export const DualPanelAllocation: React.FC<DualPanelAllocationProps> = ({
   courses,
   onShowToast
 }) => {
-  // Target class configurations with pre-assigned state
-  const [classes, setClasses] = useState<TargetClass[]>(() => {
-    return courses.map((course, index) => {
+  const enrollments = useAppStore(state => state.enrollments);
+  
+  // Target class configurations with dynamic state reading from store
+  const classes = useMemo<TargetClass[]>(() => {
+    return courses.map(course => {
+      // Find all enrollments for this course
+      const courseEnrollments = enrollments.filter(e => e.courseId === course.id);
+      
+      // Map to actual student objects
+      const assignedStudents = courseEnrollments
+        .map(e => students.find(s => s.id === e.studentId))
+        .filter((s): s is Student => s !== undefined);
+        
       return {
         id: course.id,
         code: course.code,
         name: course.name,
         instructor: course.instructor || 'Staff Academic',
-        capacity: 35,
-        assignedCount: 0,
-        assignedStudents: [] // Start empty, can assign dynamically
+        capacity: course.capacity || 35,
+        assignedCount: assignedStudents.length,
+        assignedStudents: assignedStudents
       };
     });
-  });
+  }, [courses, enrollments, students]);
 
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || '');
+  const [selectedClassId, setSelectedClassId] = useState<string>(courses[0]?.id || '');
+  
+  React.useEffect(() => {
+    if (!selectedClassId && courses.length > 0) {
+      setSelectedClassId(courses[0].id);
+    } else if (selectedClassId && !courses.find(c => c.id === selectedClassId)) {
+      setSelectedClassId(courses[0]?.id || '');
+    }
+  }, [courses, selectedClassId]);
   const assignStudentsToCourse = useAppStore(state => state.assignStudentsToCourse);
   const removeStudentFromCourse = useAppStore(state => state.removeStudentFromCourse);
   const [unassignedSearch, setUnassignedSearch] = useState('');
@@ -304,12 +322,17 @@ export const DualPanelAllocation: React.FC<DualPanelAllocationProps> = ({
               value={selectedClassId}
               onChange={e => setSelectedClassId(e.target.value)}
               className="w-full bg-transparent font-extrabold text-sm text-indigo-950 focus:outline-none cursor-pointer"
+              disabled={classes.length === 0}
             >
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.code} - {cls.name} ({cls.instructor})
-                </option>
-              ))}
+              {classes.length === 0 ? (
+                <option value="">No courses available</option>
+              ) : (
+                classes.map(cls => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.code} - {cls.name} ({cls.instructor})
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

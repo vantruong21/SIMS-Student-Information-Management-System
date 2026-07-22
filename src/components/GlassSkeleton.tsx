@@ -13,7 +13,7 @@ export const GlassSkeleton: React.FC<GlassSkeletonProps> = ({
   count = 1,
 }) => {
   // Motion shimmer animation settings
-  const shimmerVariants = {
+  const shimmerVariants: any = {
     animate: {
       backgroundPosition: ['200% 0', '-200% 0'],
       transition: {

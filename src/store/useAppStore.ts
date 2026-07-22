@@ -29,18 +29,32 @@ interface AppState {
   enrollments: any[];
   grades: any[];
   departments: any[];
+  faculty: any[];
   isInitialized: boolean;
+  systemSettings: {
+    maintenance: boolean;
+    registration: boolean;
+    notifications: boolean;
+    term: string;
+  };
 
   // Actions
   initialize: () => Promise<void>;
   refreshData: () => void;
+  updateSystemSettings: (settings: Partial<AppState['systemSettings']>) => void;
 
   // Student actions
-  addStudent: (data: { name: string; email: string; program: string; phone?: string; dateOfBirth?: string; address?: string }) => { success: boolean; errors?: string[] };
+  addStudent: (data: { name: string; email: string; program: string; phone?: string; dateOfBirth?: string; address?: string; status?: string }) => { success: boolean; errors?: string[] };
   deleteStudent: (studentId: string) => boolean;
   updateStudentStatus: (studentId: string, status: string) => boolean;
+  updateStudentProfile: (studentId: string, data: Partial<{ name: string; email: string; program: string; status: string }>) => boolean;
   importStudents: (students: any[]) => void;
   toggleUserLock: (email: string) => boolean;
+  
+  // Faculty actions
+  addFaculty: (data: { name: string; email: string; phone?: string; department?: string }) => { success: boolean; errors?: string[] };
+  updateFaculty: (id: string, data: Partial<{ name: string; email: string; phone: string; isActive: boolean }>) => boolean;
+  deleteFaculty: (id: string) => boolean;
 
   // Course actions
   addCourse: (data: { code: string; name: string; instructor: string; schedule: string; credits: number; capacity?: number; department?: string }) => { success: boolean; errors?: string[] };
@@ -61,7 +75,6 @@ interface AppState {
   deleteDepartment: (id: string) => boolean;
 
   // User actions
-  toggleUserLock: (email: string) => boolean;
   updateUserProfile: (email: string, data: { phone?: string; password?: string }) => Promise<boolean>;
 }
 
@@ -71,7 +84,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   enrollments: [],
   grades: [],
   departments: [],
+  faculty: [],
   isInitialized: false,
+  systemSettings: JSON.parse(localStorage.getItem('elevate_system_settings') || 'null') || {
+    maintenance: false,
+    registration: true,
+    notifications: true,
+    term: 'Fall 2024'
+  },
 
   initialize: async () => {
     if (get().isInitialized) return;
@@ -85,6 +105,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       enrollments: facade.getEnrollments(),
       grades: facade.getAllGrades(),
       departments: facade.getAllDepartments ? facade.getAllDepartments() : [],
+      faculty: facade.getAllFaculty(),
       isInitialized: true,
     });
   },
@@ -97,6 +118,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       enrollments: facade.getEnrollments(),
       grades: facade.getAllGrades(),
       departments: facade.getAllDepartments ? facade.getAllDepartments() : [],
+      faculty: facade.getAllFaculty(),
+    });
+  },
+
+  updateSystemSettings: (newSettings) => {
+    set((state) => {
+      const updated = { ...state.systemSettings, ...newSettings };
+      localStorage.setItem('elevate_system_settings', JSON.stringify(updated));
+      return { systemSettings: updated };
     });
   },
 
@@ -136,6 +166,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     return success;
   },
 
+  updateStudentProfile: (studentId, data) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.updateStudentProfile(studentId, data);
+    if (success) {
+      set({ students: facade.getAllStudents() });
+    }
+    return success;
+  },
+
   importStudents: (students) => {
     if (!requireRoles(['Admin'])) return;
     const facade = AppFacade.getInstance();
@@ -158,7 +198,42 @@ export const useAppStore = create<AppState>((set, get) => ({
     const facade = AppFacade.getInstance();
     const success = facade.toggleUserLock(email);
     if (success) {
-      set({ students: facade.getAllStudents() });
+      set({
+        students: facade.getAllStudents(),
+        faculty: facade.getAllFaculty(),
+      });
+    }
+    return success;
+  },
+
+  // --- Faculty Actions ---
+
+  addFaculty: (data) => {
+    if (!requireRoles(['Admin'])) return { success: false, errors: ['Unauthorized Action'] };
+    const facade = AppFacade.getInstance();
+    const result = facade.addFaculty(data);
+    if (result.success) {
+      set({ faculty: facade.getAllFaculty() });
+    }
+    return result;
+  },
+
+  updateFaculty: (id, data) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.updateFaculty(id, data);
+    if (success) {
+      set({ faculty: facade.getAllFaculty() });
+    }
+    return success;
+  },
+
+  deleteFaculty: (id) => {
+    if (!requireRoles(['Admin'])) return false;
+    const facade = AppFacade.getInstance();
+    const success = facade.deleteFaculty(id);
+    if (success) {
+      set({ faculty: facade.getAllFaculty() });
     }
     return success;
   },

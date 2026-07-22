@@ -1,127 +1,172 @@
 import React, { useState } from 'react';
 import { 
-  Users, 
-  Upload, 
-  Plus, 
-  Search, 
   Filter, 
+  Upload, 
+  MoreVertical, 
   Trash2, 
   Check, 
-  MoreVertical, 
-  ChevronLeft, 
-  ChevronRight, 
-  Loader2, 
-  FileSpreadsheet,
-  AlertCircle
+  AlertCircle, 
+  Plus,
+  Search,
+  X,
+  Edit3,
+  Lock,
+  Unlock
 } from 'lucide-react';
+import { DataTable, Column } from '../ui/DataTable';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { GlassPanel } from '../ui/GlassPanel';
 import { Student } from '../../types';
 import { CsvImportWizard } from './CsvImportWizard';
 import { GlassSkeleton } from '../GlassSkeleton';
 import { GlassEmptyState } from '../GlassEmptyState';
+import { Modal } from '../ui/Modal';
 
 interface UsersDataTableProps {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
   students: Student[];
+  searchQuery: string;
+  onApproveStudent: (id: string) => void;
+  onDeleteStudent: (id: string) => void;
+  onToggleLock: (email: string) => void;
+  onShowToast: (msg: string, type?: 'success'|'error') => void;
   onAddLocalStudent: (student: Student) => void;
   onImportLocalStudents: (students: Student[]) => void;
-  onApproveStudent: (studentId: string) => void;
-  onDeleteStudent: (studentId: string) => void;
-  onToggleLock: (email: string) => void;
-  onShowToast: (message: string, type?: 'success' | 'error') => void;
+  onEditLocalStudent?: (id: string, data: Partial<Student>) => void;
 }
 
 export const UsersDataTable: React.FC<UsersDataTableProps> = ({
-  searchQuery,
-  setSearchQuery,
   students,
-  onAddLocalStudent,
-  onImportLocalStudents,
+  searchQuery,
   onApproveStudent,
   onDeleteStudent,
   onToggleLock,
-  onShowToast
+  onShowToast,
+  onAddLocalStudent,
+  onImportLocalStudents,
+  onEditLocalStudent
 }) => {
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  
-  // Table Pagination & Filters
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState('All');
   const [programFilter, setProgramFilter] = useState('All');
+  
 
-  // Action menus tracking
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-
-  // New student states
+  
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newProgram, setNewProgram] = useState('Software Engineering');
   const [newStatus, setNewStatus] = useState<'Active' | 'Pending'>('Active');
+  
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  const pageSize = 10;
+  
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          student.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || student.status === statusFilter;
+    const matchesProgram = programFilter === 'All' || student.program === programFilter;
+    return matchesSearch && matchesStatus && matchesProgram;
+  });
 
-  // React hook dependency reset
-  React.useEffect(() => {
-    setPage(1);
-  }, [searchQuery, statusFilter, programFilter, pageSize]);
+  const columns: Column<Student>[] = [
+    {
+      header: 'Student Name',
+      key: 'name',
+      render: (s) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/15 to-purple-500/10 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm border border-white">
+            {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+          </div>
+          <div className="text-left">
+            <p className="font-extrabold text-indigo-950">{s.name}</p>
+            <p className="text-[10px] text-gray-400 font-mono mt-0.5">{s.email}</p>
+          </div>
+        </div>
+      )
+    },
+    { header: 'Student ID', key: 'id', className: 'text-gray-700 font-mono font-medium' },
+    { header: 'Academic Program', key: 'program', className: 'text-gray-600 font-semibold' },
+    { header: 'GPA', key: 'gpa', className: 'font-black text-gray-950', render: (s) => s.gpa ? s.gpa.toFixed(2) : '—' },
+    { header: 'Credits', key: 'totalCredits', className: 'font-semibold text-gray-500', render: (s) => `${s.totalCredits || 0} hrs` },
+    {
+      header: 'Status',
+      key: 'status',
+      render: (s) => (
+        <Badge variant={s.isLocked ? 'error' : s.status === 'Active' ? 'success' : 'warning'} dot>
+          {s.isLocked ? 'Locked' : s.status}
+        </Badge>
+      )
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      className: 'text-right',
+      render: (s) => (
+        <div className="flex items-center justify-end gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+          {s.status === 'Pending' && (
+            <button
+              title="Approve Student"
+              onClick={() => onApproveStudent(s.id)}
+              className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg border border-emerald-200 transition-colors group/btn relative"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+          )}
 
-  // Filter local student records
-  const combinedStudents = React.useMemo(() => {
-    const matchedLocal = students.filter(s => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchesSearch = !q || 
-        s.name.toLowerCase().includes(q) || 
-        s.email.toLowerCase().includes(q) || 
-        s.id.toLowerCase().includes(q) || 
-        s.program.toLowerCase().includes(q);
-      
-      const matchesStatus = statusFilter === 'All' || s.status === statusFilter;
-      const matchesProgram = programFilter === 'All' || s.program === programFilter;
-      
-      return matchesSearch && matchesStatus && matchesProgram;
-    });
-
-    const startIndex = (page - 1) * pageSize;
-    return matchedLocal.slice(startIndex, startIndex + pageSize);
-  }, [students, searchQuery, statusFilter, programFilter, page, pageSize]);
-
-  // Calculations for display pagination counts
-  const totalRecords = React.useMemo(() => {
-    return students.filter(s => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchesSearch = !q || 
-        s.name.toLowerCase().includes(q) || 
-        s.email.toLowerCase().includes(q) || 
-        s.id.toLowerCase().includes(q) || 
-        s.program.toLowerCase().includes(q);
-      
-      const matchesStatus = statusFilter === 'All' || s.status === statusFilter;
-      const matchesProgram = programFilter === 'All' || s.program === programFilter;
-      
-      return matchesSearch && matchesStatus && matchesProgram;
-    }).length;
-  }, [students, searchQuery, statusFilter, programFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+          <button 
+            onClick={() => setEditingStudent(s)}
+            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors group/btn relative"
+            title="Edit Profile"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          
+          <button 
+            onClick={() => {
+              onToggleLock(s.email);
+            }}
+            className={`p-1.5 rounded-lg transition-colors group/btn relative ${s.isLocked ? 'text-indigo-600 hover:bg-indigo-50' : 'text-amber-600 hover:bg-amber-50'}`}
+            title={s.isLocked ? "Unlock Account" : "Lock Account"}
+          >
+            {s.isLocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+          </button>
+          
+          <button 
+            onClick={() => setDeleteConfirmId(s.id)}
+            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors group/btn relative"
+            title="Delete Profile"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )
+    }
+  ];
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
 
-    const newStudent: Student = {
-      id: `STD-${2500 + Math.floor(Math.random() * 5000)}`,
+    // We only pass the fields required by the register action in useAppStore
+    // The Store/Facade handles ID generation and business logic
+    const res = onAddLocalStudent({
       name: newName,
       email: newEmail,
       program: newProgram,
-      status: newStatus,
-      gpa: parseFloat((3.3 + Math.random() * 0.7).toFixed(2)),
-      totalCredits: 12 + Math.floor(Math.random() * 88)
-    };
+      status: newStatus as any
+    } as any);
 
-    onAddLocalStudent(newStudent);
-    onShowToast(`Successfully added student profile: ${newName}`);
+    if (res && res.success === false) {
+      onShowToast(res.errors?.[0] || 'Failed to add student', 'error');
+      return;
+    }
+
+    onShowToast(`Successfully added student profile: ${newName}`, 'success');
     
-    // Reset form
     setNewName('');
     setNewEmail('');
     setNewProgram('Software Engineering');
@@ -137,8 +182,7 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Heavy-Duty Table Filter and Control Header */}
-      <section className="glass-panel rounded-3xl p-6 shadow-sm border border-white/50 text-left">
+      <GlassPanel className="text-left shadow-sm">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
           <div className="text-left">
             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -181,334 +225,238 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
             </div>
 
             {/* CSV Import */}
-            <button 
-              onClick={() => setIsImportOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/70 border border-indigo-200 text-indigo-600 hover:bg-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 duration-200 cursor-pointer"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Import CSV</span>
-            </button>
+            <Button variant="secondary" icon={Upload} onClick={() => setIsImportOpen(true)}>
+              Import CSV
+            </Button>
 
             {/* Add Student */}
-            <button 
-              onClick={() => setIsAddOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-xs font-bold rounded-xl shadow-[0_6px_12px_rgba(79,70,229,0.15)] hover:shadow-[0_10px_20px_rgba(79,70,229,0.25)] hover:from-indigo-700 transition-all active:scale-95 duration-200 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Student</span>
-            </button>
+            <Button variant="primary" icon={Plus} onClick={() => setIsAddOpen(true)}>
+              Add Student
+            </Button>
           </div>
         </div>
 
-        {/* Content */}
-            {/* The Paginated Data Table */}
-            <div className="overflow-hidden rounded-2xl border border-white/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.01)] bg-white/20">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white/45 backdrop-blur-sm text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 border-b border-white/50">
-                      <th className="py-4 px-6 font-black">Student Name</th>
-                      <th className="py-4 px-6 font-black">Student ID</th>
-                      <th className="py-4 px-6 font-black">Academic Program</th>
-                      <th className="py-4 px-6 font-black">GPA</th>
-                      <th className="py-4 px-6 font-black">Credits</th>
-                      <th className="py-4 px-6 font-black">Status</th>
-                      <th className="py-4 px-6 font-black text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-xs sm:text-sm divide-y divide-white/20">
-                    {combinedStudents.length > 0 ? (
-                      combinedStudents.map((student) => {
-                        const initials = student.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .substring(0, 2)
-                          .toUpperCase();
+        <DataTable 
+          data={filteredStudents}
+          columns={columns}
+          keyField="id"
+          pageSize={pageSize}
+          emptyMessage="No scholars found matching current criteria"
+        />
+      </GlassPanel>
 
-                        return (
-                          <tr 
-                            key={student.id}
-                            className="hover:bg-slate-50/30 transition-colors group relative"
-                          >
-                            {/* Avatar & Name */}
-                            <td className="py-4 px-6 flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/15 to-purple-500/10 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm border border-white">
-                                {initials}
-                              </div>
-                              <div className="text-left">
-                                <p className="font-extrabold text-indigo-950 group-hover:text-indigo-600 transition-colors">
-                                  {student.name}
-                                </p>
-                                <p className="text-[10px] text-gray-400 font-mono mt-0.5">{student.email}</p>
-                              </div>
-                            </td>
-
-                            {/* Student ID */}
-                            <td className="py-4 px-6 text-gray-700 font-mono font-medium">
-                              {student.id}
-                            </td>
-
-                            {/* Program */}
-                            <td className="py-4 px-6 text-gray-600 font-semibold">
-                              {student.program}
-                            </td>
-
-                            {/* GPA */}
-                            <td className="py-4 px-6 font-black text-gray-950">
-                              {student.gpa ? student.gpa.toFixed(2) : '—'}
-                            </td>
-
-                            {/* Credits */}
-                            <td className="py-4 px-6 font-semibold text-gray-500">
-                              {student.totalCredits || 0} hrs
-                            </td>
-
-                            {/* Status */}
-                            <td className="py-4 px-6">
-                              <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-[10px] font-black ${
-                                student.isLocked ? 'bg-red-50 text-red-700 border border-red-200/50' :
-                                student.status === 'Active'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50'
-                                  : 'bg-amber-50 text-amber-700 border border-amber-200/50'
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${student.isLocked ? 'bg-red-500' : student.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                {student.isLocked ? 'Locked' : student.status}
-                              </span>
-                            </td>
-
-                            {/* Actions Dropdown */}
-                            <td className="py-4 px-6 text-right relative">
-                              <div className="flex items-center justify-end gap-1.5">
-                                {student.status === 'Pending' && (
-                                  <button
-                                    title="Approve Student"
-                                    onClick={() => onApproveStudent(student.id)}
-                                    className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
-                                  >
-                                    <Check className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-
-                                <div className="relative">
-                                  <button 
-                                    onClick={() => setActiveMenuId(activeMenuId === student.id ? null : student.id)}
-                                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all cursor-pointer"
-                                  >
-                                    <MoreVertical className="w-4 h-4" />
-                                  </button>
-
-                                  {activeMenuId === student.id && (
-                                    <>
-                                      <div className="fixed inset-0 z-30" onClick={() => setActiveMenuId(null)} />
-                                      <div className="absolute right-0 mt-1 w-36 bg-white border border-gray-150 rounded-xl shadow-lg p-1.5 z-40 text-left animate-in fade-in slide-in-from-top-1 duration-150">
-                                        {student.status === 'Pending' && (
-                                          <button 
-                                            onClick={() => {
-                                              onApproveStudent(student.id);
-                                              setActiveMenuId(null);
-                                            }}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                                          >
-                                            <Check className="w-3.5 h-3.5" />
-                                            <span>Approve</span>
-                                          </button>
-                                        )}
-                                        <button 
-                                          onClick={() => {
-                                            onToggleLock(student.email);
-                                            setActiveMenuId(null);
-                                          }}
-                                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                                        >
-                                          <AlertCircle className="w-3.5 h-3.5" />
-                                          <span>{student.isLocked ? 'Unlock Account' : 'Lock Account'}</span>
-                                        </button>
-                                        <button 
-                                          onClick={() => {
-                                            onDeleteStudent(student.id);
-                                            setActiveMenuId(null);
-                                          }}
-                                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                          <span>Delete Profile</span>
-                                        </button>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="p-8">
-                          <GlassEmptyState
-                            title="No scholars found matching current criteria"
-                            description="There are no registered students or newly imported profiles that match the filtered parameters. Modify your search query or status toggle to retrieve other accounts."
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-indigo-50/40">
-              <span className="text-xs text-indigo-900/60 font-semibold">
-                Showing page <b>{page}</b> of <b>{totalPages}</b> ({totalRecords} synchronized records)
-              </span>
-              
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span>Show</span>
-                  <select 
-                    value={pageSize} 
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setPage(1);
-                    }}
-                    className="bg-white/60 border border-indigo-100 rounded-lg px-2 py-1 text-indigo-600 font-bold outline-none cursor-pointer"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <span>records</span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    className="p-2 rounded-xl bg-white/70 border border-indigo-150 text-indigo-600 hover:bg-white disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer shadow-sm"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-xs font-bold text-indigo-950 px-2 font-mono">
-                    {page} / {totalPages}
-                  </span>
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    className="p-2 rounded-xl bg-white/70 border border-indigo-150 text-indigo-600 hover:bg-white disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer shadow-sm"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-      </section>
-
-      {/* CSV Import Wizard Overlay */}
-      <CsvImportWizard
-        isOpen={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
-        onImportComplete={handleImportComplete}
-      />
-
-      {/* Add New Student Modal */}
+      {/* Manual Add Form Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-indigo-950/25 backdrop-blur-md" onClick={() => setIsAddOpen(false)} />
-          <div className="relative bg-white/95 backdrop-blur-2xl rounded-[28px] border border-white/80 p-6 md:p-8 w-full max-w-md shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left">
-            <button 
-              onClick={() => setIsAddOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-gray-50 text-gray-500 hover:text-indigo-950 transition-colors cursor-pointer"
-            >
-              ×
-            </button>
-
-            <div className="mb-6">
-              <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                Registration Queue
-              </span>
-              <h4 className="font-display text-lg font-bold text-indigo-950 mt-1.5">Add Student Profile</h4>
-              <p className="text-xs text-gray-500 mt-0.5">Initialize a new secure student account record.</p>
+        <div className="fixed inset-0 bg-indigo-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white/90 backdrop-blur-xl border border-white rounded-3xl p-6 shadow-2xl w-full max-w-md animate-in fade-in zoom-in duration-300 my-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-indigo-950 font-display">New Scholar Profile</h3>
+                <p className="text-xs text-gray-500 mt-1">Provision a new academic identity</p>
+              </div>
+              <button 
+                onClick={() => setIsAddOpen(false)}
+                className="p-2 rounded-full hover:bg-black/5 text-gray-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5 ml-1">Full Name</label>
-                <input 
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Full Name</label>
+                <input
                   type="text"
                   required
                   value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  placeholder="e.g. John Doe"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-inner focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm"
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm"
+                  placeholder="e.g. Katherine Johnson"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5 ml-1">Academic Email</label>
-                <input 
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <input
                   type="email"
                   required
                   value={newEmail}
-                  onChange={e => setNewEmail(e.target.value)}
-                  placeholder="s.jenkins@elevate.edu"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-inner focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm"
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm"
+                  placeholder="e.g. kat.johnson@elevate.edu"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5 ml-1">Academic Program</label>
-                <select 
-                  value={newProgram}
-                  onChange={e => setNewProgram(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all text-sm cursor-pointer"
-                >
-                  <option value="Software Engineering">Software Engineering</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Graphic Design">Graphic Design</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5 ml-1">Initial Status</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
-                    <input 
-                      type="radio" 
-                      name="new_status" 
-                      checked={newStatus === 'Active'}
-                      onChange={() => setNewStatus('Active')}
-                      className="text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                    />
-                    <span>Active immediately</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
-                    <input 
-                      type="radio" 
-                      name="new_status" 
-                      checked={newStatus === 'Pending'}
-                      onChange={() => setNewStatus('Pending')}
-                      className="text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                    />
-                    <span>Approval queue</span>
-                  </label>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Program</label>
+                  <select
+                    value={newProgram}
+                    onChange={(e) => setNewProgram(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm cursor-pointer"
+                  >
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Graphic Design">Graphic Design</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-indigo-500/15 transition-all cursor-pointer text-xs"
+              <div className="pt-4 flex gap-3">
+                <Button 
+                  type="button" 
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => setIsAddOpen(false)}
                 >
-                  Register Profile
-                </button>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  variant="primary"
+                  className="w-full"
+                >
+                  Provision Account
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Manual Edit Form Modal */}
+      {editingStudent && (
+        <div className="fixed inset-0 bg-indigo-950/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white/90 backdrop-blur-xl border border-white rounded-3xl p-6 shadow-2xl w-full max-w-md animate-in fade-in zoom-in duration-300 my-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-indigo-950 font-display">Edit Scholar Profile</h3>
+                <p className="text-xs text-gray-500 mt-1">Update academic identity</p>
+              </div>
+              <button 
+                onClick={() => setEditingStudent(null)}
+                className="p-2 rounded-full hover:bg-black/5 text-gray-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (onEditLocalStudent) {
+                onEditLocalStudent(editingStudent.id, {
+                  name: editingStudent.name,
+                  email: editingStudent.email,
+                  program: editingStudent.program,
+                  status: editingStudent.status
+                });
+                onShowToast(`Successfully updated student profile: ${editingStudent.name}`);
+              }
+              setEditingStudent(null);
+            }} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStudent.name}
+                  onChange={(e) => setEditingStudent({...editingStudent, name: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={editingStudent.email}
+                  onChange={(e) => setEditingStudent({...editingStudent, email: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Program</label>
+                  <select
+                    value={editingStudent.program}
+                    onChange={(e) => setEditingStudent({...editingStudent, program: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm cursor-pointer"
+                  >
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Graphic Design">Graphic Design</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Status</label>
+                  <select
+                    value={editingStudent.status}
+                    onChange={(e) => setEditingStudent({...editingStudent, status: e.target.value as 'Active' | 'Pending'})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm cursor-pointer"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <Button 
+                  type="button" 
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => setEditingStudent(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  variant="primary"
+                  className="w-full"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CSV Wizard Modal */}
+      {isImportOpen && (
+        <CsvImportWizard 
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)} 
+          onImportComplete={handleImportComplete} 
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={!!deleteConfirmId} 
+        onClose={() => setDeleteConfirmId(null)}
+        title="Confirm Deletion"
+        maxWidth="max-w-sm"
+      >
+        <div className="p-6 text-gray-600">
+          <p>Are you sure you want to permanently delete this student profile? This action cannot be undone.</p>
+        </div>
+        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-3xl">
+          <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => {
+            if (deleteConfirmId) {
+              onDeleteStudent(deleteConfirmId);
+              setDeleteConfirmId(null);
+            }
+          }}>
+            Delete Profile
+          </Button>
+        </div>
+      </Modal>
 
     </div>
   );

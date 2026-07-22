@@ -94,7 +94,7 @@ export class AppFacade {
     }
 
     if (user.isTemporarilyLocked()) {
-      return { success: false, user: null, errors: ['Account is locked due to multiple failed login attempts. Try again later.'] };
+      return { success: false, user: null, error: 'Account is locked due to multiple failed login attempts. Try again later.' };
     }
 
     const hash = await this.hashPassword(password);
@@ -113,11 +113,22 @@ export class AppFacade {
     localStorage.setItem('elevate_session_token', token);
     localStorage.setItem('elevate_session_expiry', (Date.now() + 30 * 60 * 1000).toString());
 
-    this.eventBus.publish(AppEvents.USER_LOGGED_IN, user.toProfile());
+    let profile = user.toProfile() as any;
+
+    if (user.role === 'Student') {
+      const studentData = this.studentRepo.find(s => s.email === user.email)[0];
+      if (studentData) {
+        profile.gpa = studentData.gpa;
+        profile.creditsCompleted = studentData.totalCredits;
+        profile.totalCreditsNeeded = 140; // Default or configured
+      }
+    }
+
+    this.eventBus.publish(AppEvents.USER_LOGGED_IN, profile);
 
     return {
       success: true,
-      user: user.toProfile(),
+      user: profile,
       token
     };
   }
@@ -169,7 +180,7 @@ export class AppFacade {
     if (data.password) {
       const hash = await this.hashPassword(data.password);
       (user as any)._passwordHash = hash;
-      user.touch();
+      (user as any).touch();
     }
     
     this.userRepo.update(user.id, user);
@@ -178,6 +189,71 @@ export class AppFacade {
     this.eventBus.publish(AppEvents.USER_LOGGED_IN, user.toProfile());
     return true;
   }
+
+  // ============================
+  // FACULTY OPERATIONS
+  // ============================
+
+  public getAllFaculty() {
+    return this.userRepo.getAll().filter(u => u.role === 'Faculty').map(u => u.toProfile());
+  }
+
+  public addFaculty(data: { name: string; email: string; phone?: string; department?: string }) {
+    if (this.userRepo.emailExists(data.email)) {
+      return { success: false, errors: ['A user with this email already exists'] };
+    }
+    
+    // Default password for new faculty is 'elevate2026'
+    const defaultHash = 'fcb80cf23a6c07466dedc1acb46f615315111cdee0e13b5f51671a269fee035f';
+    
+    const facultyId = `FAC-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newFaculty = new UserModel(
+      facultyId,
+      data.name,
+      data.email,
+      'Faculty',
+      defaultHash,
+      '',
+      true,
+      undefined,
+      0,
+      undefined,
+      false,
+      data.phone
+    );
+
+    this.userRepo.create(newFaculty);
+    return { success: true, facultyId: newFaculty.id };
+  }
+
+  public updateFaculty(id: string, data: Partial<{ name: string; email: string; phone: string; isActive: boolean }>) {
+    const faculty = this.userRepo.getById(id);
+    if (!faculty || faculty.role !== 'Faculty') return false;
+
+    if (data.name) (faculty as any)._name = data.name;
+    if (data.email) (faculty as any)._email = data.email;
+    if (data.phone !== undefined) faculty.updatePhone(data.phone);
+    if (data.isActive !== undefined) (faculty as any)._isActive = data.isActive;
+    
+    (faculty as any).touch();
+    this.userRepo.update(id, faculty);
+    return true;
+  }
+
+  public deleteFaculty(id: string) {
+    const faculty = this.userRepo.getById(id);
+    if (!faculty || faculty.role !== 'Faculty') return false;
+    
+    // Clear instructor from courses taught by this faculty
+    const coursesToUpdate = this.courseRepo.getAll().filter(c => c.instructor === faculty.name);
+    coursesToUpdate.forEach(c => {
+      c.instructor = 'Staff Academic';
+      this.courseRepo.update(c.id, c);
+    });
+    
+    return this.userRepo.delete(id);
+  }
+
 
   // ============================
   // STUDENT OPERATIONS
@@ -191,7 +267,7 @@ export class AppFacade {
     return this.studentRepo.getById(id)?.toPlainObject() || null;
   }
 
-  public registerStudent(data: { name: string; email: string; program: string; phone?: string; dateOfBirth?: string; address?: string }) {
+  public registerStudent(data: { name: string; email: string; program: string; phone?: string; dateOfBirth?: string; address?: string; status?: string }) {
     const errors = this.studentValidator.validate(data);
     if (errors.length > 0) return { success: false, errors };
 
@@ -206,10 +282,29 @@ export class AppFacade {
         program: data.program as Program,
         phone: data.phone,
         dateOfBirth: data.dateOfBirth,
-        address: data.address
+        address: data.address,
+        status: data.status as any
       });
 
       this.studentRepo.create(student);
+      
+      const defaultHash = 'fcb80cf23a6c07466dedc1acb46f615315111cdee0e13b5f51671a269fee035f'; // elevate2026
+      const newUser = new UserModel(
+        student.id,
+        student.name,
+        student.email,
+        'Student',
+        defaultHash,
+        '',
+        student.status === 'Active', // Only active if status is Active
+        undefined,
+        0,
+        undefined,
+        false,
+        student.phone
+      );
+      this.userRepo.create(newUser);
+
       this.eventBus.publish(AppEvents.STUDENT_REGISTERED, student.toPlainObject());
       return { success: true, studentId: student.id };
     } catch (err: any) {
@@ -244,6 +339,32 @@ export class AppFacade {
     const student = this.studentRepo.getById(studentId);
     if (!student) return false;
     (student as any)._status = status;
+    (student as any)._updatedAt = new Date().toISOString();
+    this.studentRepo.update(studentId, student);
+    
+    // Synchronize with user account
+    const user = this.userRepo.getById(studentId);
+    if (user) {
+      if (status === 'Active') {
+        user.activate();
+      } else {
+        user.deactivate();
+      }
+      this.userRepo.update(studentId, user);
+    }
+    
+    return true;
+  }
+
+  public updateStudentProfile(studentId: string, data: Partial<{ name: string; email: string; program: string; status: string }>): boolean {
+    const student = this.studentRepo.getById(studentId);
+    if (!student) return false;
+    
+    if (data.name) (student as any)._name = data.name;
+    if (data.email) (student as any)._email = data.email;
+    if (data.program) (student as any)._program = data.program;
+    if (data.status) (student as any)._status = data.status;
+    
     (student as any)._updatedAt = new Date().toISOString();
     this.studentRepo.update(studentId, student);
     return true;
@@ -496,56 +617,17 @@ export class AppFacade {
 
     // Seed departments if empty
     if (this.departmentRepo.count() === 0) {
-      const depts = [
-        EntityFactory.createDepartment({ name: 'Khoa Công nghệ Thông tin', head: 'Dr. Turing', description: 'Đào tạo kỹ sư phần mềm, khoa học máy tính và AI.', facultyCount: 45 }),
-        EntityFactory.createDepartment({ name: 'Khoa Kinh tế Quản trị', head: 'Prof. Miller', description: 'Quản trị kinh doanh, Marketing và Tài chính.', facultyCount: 30 }),
-        EntityFactory.createDepartment({ name: 'Khoa Thiết kế Đồ họa', head: 'Prof. Carter', description: 'Thiết kế UI/UX, Đồ họa 2D/3D và Truyền thông.', facultyCount: 25 }),
-        EntityFactory.createDepartment({ name: 'Khoa Ngoại ngữ', head: 'Dr. Jones', description: 'Đào tạo Ngôn ngữ Anh, Nhật, Hàn, Trung.', facultyCount: 40 }),
-      ];
-      depts.forEach(d => this.departmentRepo.create(d));
+      // Empty - Ready for real database integration
     }
 
     // Seed courses if empty
     if (this.courseRepo.count() === 0) {
-      const courses = [
-        new CourseModel('CRS-se1', 'SE101', 'Application Development', 'Dr. Smith', 'Mon/Wed 9:00 AM', 'In Progress', 3, 35, 0, '', 'Software Engineering'),
-        new CourseModel('CRS-se2', 'SE102', 'Applied Programming and Design Principles', 'Dr. Jones', 'Tue/Thu 1:00 PM', 'In Progress', 4, 35, 0, '', 'Software Engineering'),
-        new CourseModel('CRS-se3', 'SE103', 'Discrete Maths', 'Prof. Turing', 'Mon/Wed 2:00 PM', 'In Progress', 3, 35, 0, '', 'Software Engineering'),
-        new CourseModel('CRS-mk1', 'MKT201', 'Digital Marketing Strategy', 'Prof. Miller', 'Tue/Thu 10:00 AM', 'In Progress', 3, 35, 0, '', 'Marketing'),
-        new CourseModel('CRS-mk2', 'MKT202', 'Consumer Behavior', 'Dr. Davis', 'Mon/Wed 11:00 AM', 'In Progress', 3, 35, 0, '', 'Marketing'),
-        new CourseModel('CRS-mk3', 'MKT203', 'Brand Management', 'Prof. Wilson', 'Fri 9:00 AM', 'In Progress', 3, 35, 0, '', 'Marketing'),
-        new CourseModel('CRS-gd1', 'DES301', 'Typography Fundamentals', 'Prof. Carter', 'Mon/Wed 3:00 PM', 'In Progress', 3, 35, 0, '', 'Graphic Design'),
-        new CourseModel('CRS-gd2', 'DES302', 'UI/UX Design', 'Dr. Lee', 'Tue/Thu 2:00 PM', 'In Progress', 4, 35, 0, '', 'Graphic Design'),
-        new CourseModel('CRS-gd3', 'DES303', 'Color Theory', 'Prof. White', 'Fri 1:00 PM', 'In Progress', 3, 35, 0, '', 'Graphic Design'),
-      ];
-      courses.forEach(c => this.courseRepo.create(c));
+      // Empty - Ready for real database integration
     }
 
     // Seed students if empty
     if (this.studentRepo.count() === 0) {
-      const seedStudents = [
-        new StudentModel('STD-001', 'Alice Johnson', 'alice@elevate.edu', 'Software Engineering', 'Active', 3.85, 96),
-        new StudentModel('STD-002', 'Bob Smith', 'bob@elevate.edu', 'Software Engineering', 'Active', 3.62, 84),
-        new StudentModel('STD-003', 'Carol Williams', 'carol@elevate.edu', 'Marketing', 'Active', 3.91, 108),
-        new StudentModel('STD-004', 'David Brown', 'david@elevate.edu', 'Graphic Design', 'Active', 3.45, 72),
-        new StudentModel('STD-005', 'Emma Davis', 'emma@elevate.edu', 'Data Science', 'Active', 3.78, 90),
-        new StudentModel('STD-006', 'Frank Miller', 'frank@elevate.edu', 'Software Engineering', 'Pending', 0, 0),
-        new StudentModel('STD-007', 'Grace Wilson', 'grace@elevate.edu', 'Marketing', 'Active', 3.55, 66),
-        new StudentModel('STD-008', 'Henry Taylor', 'henry@elevate.edu', 'Business Administration', 'Active', 3.70, 78),
-        new StudentModel('STD-009', 'Ivy Anderson', 'ivy@elevate.edu', 'Graphic Design', 'Pending', 0, 0),
-        new StudentModel('STD-010', 'Jack Thomas', 'jack@elevate.edu', 'Data Science', 'Active', 3.33, 54),
-        new StudentModel('STD-011', 'Karen White', 'karen@elevate.edu', 'Software Engineering', 'Active', 3.92, 114),
-        new StudentModel('STD-012', 'Leo Martinez', 'leo@elevate.edu', 'Marketing', 'Active', 3.48, 60),
-        new StudentModel('STD-013', 'Mia Garcia', 'mia@elevate.edu', 'Graphic Design', 'Active', 3.67, 82),
-        new StudentModel('STD-014', 'Noah Robinson', 'noah@elevate.edu', 'Business Administration', 'Pending', 0, 0),
-        new StudentModel('STD-015', 'Olivia Clark', 'olivia@elevate.edu', 'Software Engineering', 'Active', 3.80, 100),
-        new StudentModel('STD-016', 'Paul Lewis', 'paul@elevate.edu', 'Data Science', 'Active', 3.25, 48),
-        new StudentModel('STD-017', 'Quinn Hall', 'quinn@elevate.edu', 'Marketing', 'Active', 3.72, 88),
-        new StudentModel('STD-018', 'Rachel Young', 'rachel@elevate.edu', 'Graphic Design', 'Active', 3.58, 74),
-        new StudentModel('STD-019', 'Sam King', 'sam@elevate.edu', 'Software Engineering', 'Active', 3.44, 62),
-        new StudentModel('STD-020', 'Tina Wright', 'tina@elevate.edu', 'Business Administration', 'Active', 3.88, 106),
-      ];
-      seedStudents.forEach(s => this.studentRepo.create(s));
+      // Empty - Ready for real database integration
     }
   }
 

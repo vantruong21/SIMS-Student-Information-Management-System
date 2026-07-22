@@ -30,38 +30,38 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
   const stats = [
     {
       label: 'System Node Cluster',
-      value: 'Online',
-      sub: 'US-EAST-4 Region',
+      value: 'Awaiting DB',
+      sub: 'Ready for Database Sync',
       icon: Server,
       color: 'indigo',
-      badge: '99.99% SLA',
+      badge: 'Local Mode',
       badgeColor: 'emerald'
     },
     {
       label: 'Synchronized Users',
       value: studentsCount.toLocaleString(),
-      sub: `${studentsCount} active profiles`,
+      sub: `${studentsCount} active student profiles`,
       icon: Users,
       color: 'blue',
-      badge: '+0.0% MoM',
+      badge: 'Live',
       badgeColor: 'emerald'
     },
     {
       label: 'Active Classes',
       value: coursesCount.toString(),
-      sub: 'Staged for Semester Startup',
+      sub: 'Courses initialized',
       icon: BookOpen,
       color: 'purple',
-      badge: 'Balanced Capacity',
+      badge: 'Live',
       badgeColor: 'indigo'
     },
     {
-      label: 'LDAP Sync Load',
-      value: '0.42 ms',
-      sub: 'Spanner Replication latency',
+      label: 'API Request Latency',
+      value: '—',
+      sub: 'Awaiting API Connection',
       icon: Cpu,
       color: 'cyan',
-      badge: 'Ultra Fast',
+      badge: 'Standby',
       badgeColor: 'emerald'
     }
   ];
@@ -164,41 +164,38 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
           <div className="space-y-4 text-left">
             {/* Telemetry rows */}
             <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-black text-indigo-950">
-                <span>Memory Allocation (SRAM)</span>
-                <span className="font-mono text-[11px] text-indigo-600">42% utilized (16.8 / 40 GB)</span>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-bold text-gray-700">Database Connection</span>
+                <span className="text-gray-500">Not Connected</span>
               </div>
-              <div className="w-full h-2 bg-indigo-100/30 rounded-full overflow-hidden border border-white">
-                <div className="bg-indigo-600 h-full rounded-full" style={{ width: '42%' }} />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-black text-indigo-950">
-                <span>CPU Core Performance</span>
-                <span className="font-mono text-[11px] text-indigo-600">12.4% Average Load</span>
-              </div>
-              <div className="w-full h-2 bg-indigo-100/30 rounded-full overflow-hidden border border-white">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: '12.4%' }} />
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gray-300 w-[0%] rounded-full"></div>
               </div>
             </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-black text-indigo-950">
-                <span>Relational Query Latency</span>
-                <span className="font-mono text-[11px] text-indigo-600">Optimal Range (1.2 ms)</span>
+            <div>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-bold text-gray-700">API Gateway Status</span>
+                <span className="text-gray-500">Standby</span>
               </div>
-              <div className="w-full h-2 bg-indigo-100/30 rounded-full overflow-hidden border border-white">
-                <div className="bg-cyan-500 h-full rounded-full" style={{ width: '95%' }} />
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gray-300 w-[0%] rounded-full"></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-bold text-gray-700">Local Cache Storage</span>
+                <span className="text-gray-500">Active</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 w-[100%] rounded-full"></div>
               </div>
             </div>
           </div>
 
-          {/* SLA Statement footer */}
-          <div className="mt-6 flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/40 border border-emerald-200/40 text-[11px] text-emerald-800 leading-normal font-semibold text-left">
-            <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
-            <p>
-              Node instances are active and healthy. The primary Spanner cluster replica is perfectly aligned with zero sync delays.
+          <div className="mt-5 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50 flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+            <p className="text-[10px] text-gray-600 font-medium leading-relaxed">
+              System is operating in Local Storage mode. Ready to be integrated with ASP.NET Core backend.
             </p>
           </div>
         </div>

@@ -5,11 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { GlassEmptyState } from './GlassEmptyState';
 
-interface StudentRecordsProps {
-  courses: Course[];
-}
-
-export const StudentRecords: React.FC<StudentRecordsProps> = () => {
+export const StudentRecords: React.FC = () => {
   const user = useAuthStore(state => state.user);
   const courses = useAppStore(state => state.courses);
   const enrollments = useAppStore(state => state.enrollments);
@@ -63,7 +59,7 @@ export const StudentRecords: React.FC<StudentRecordsProps> = () => {
   const simulatedTotalCredits = totalPastCredits + currentActiveCredits1 + currentActiveCredits2;
   const simulatedGPA = simulatedPoints / simulatedTotalCredits;
 
-  const creditsCompleted = 0;
+  const creditsCompleted = totalPastCredits;
   const totalCreditsNeeded = 140;
   const curriculumProgressPercentage = (creditsCompleted / totalCreditsNeeded) * 100;
 
