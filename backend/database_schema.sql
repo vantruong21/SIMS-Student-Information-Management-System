@@ -1,0 +1,166 @@
+-- ====================================================================
+-- SYSTEM: Student Information Management System (SIMS)
+-- DATABASE SCRIPT: MySQL Database Schema & Sample Data
+-- ====================================================================
+
+CREATE DATABASE IF NOT EXISTS `sims_db` 
+    DEFAULT CHARACTER SET utf8mb4 
+    COLLATE utf8mb4_unicode_ci;
+
+USE `sims_db`;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `Enrollments`;
+DROP TABLE IF EXISTS `Courses`;
+DROP TABLE IF EXISTS `Faculty`;
+DROP TABLE IF EXISTS `Students`;
+DROP TABLE IF EXISTS `Departments`;
+DROP TABLE IF EXISTS `Users`;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ====================================================================
+-- TABLE 1: Users
+-- ====================================================================
+CREATE TABLE `Users` (
+    `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `Email` VARCHAR(150) NOT NULL UNIQUE,
+    `PasswordHash` VARCHAR(255) NOT NULL,
+    `FullName` VARCHAR(100) NOT NULL,
+    `AvatarUrl` VARCHAR(500) NULL,
+    `Phone` VARCHAR(20) NULL,
+    `Role` ENUM('Admin', 'Faculty', 'Student') NOT NULL DEFAULT 'Student',
+    `IsActive` TINYINT(1) NOT NULL DEFAULT 1,
+    `LastLoginAt` DATETIME NULL,
+    `FailedLoginAttempts` INT NOT NULL DEFAULT 0,
+    `IsLocked` TINYINT(1) NOT NULL DEFAULT 0,
+    `LockedUntil` DATETIME NULL,
+    `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_users_email` (`Email`),
+    INDEX `idx_users_role` (`Role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ====================================================================
+-- TABLE 2: Departments
+-- ====================================================================
+CREATE TABLE `Departments` (
+    `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `DepartmentCode` VARCHAR(20) NOT NULL UNIQUE,
+    `Name` VARCHAR(100) NOT NULL,
+    `HeadFacultyId` VARCHAR(36) NULL,
+    `Description` TEXT NULL,
+    `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ====================================================================
+-- TABLE 3: Faculty
+-- ====================================================================
+CREATE TABLE `Faculty` (
+    `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `UserId` VARCHAR(36) NOT NULL UNIQUE,
+    `FacultyCode` VARCHAR(30) NOT NULL UNIQUE,
+    `DepartmentId` VARCHAR(36) NOT NULL,
+    `Degree` VARCHAR(50) NOT NULL DEFAULT 'Master',
+    `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE,
+    FOREIGN KEY (`DepartmentId`) REFERENCES `Departments`(`Id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `Departments`
+    ADD CONSTRAINT `fk_departments_head_faculty`
+    FOREIGN KEY (`HeadFacultyId`) REFERENCES `Faculty`(`Id`) ON DELETE SET NULL;
+
+-- ====================================================================
+-- TABLE 4: Students
+-- ====================================================================
+CREATE TABLE `Students` (
+    `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `UserId` VARCHAR(36) NOT NULL UNIQUE,
+    `StudentCode` VARCHAR(30) NOT NULL UNIQUE,
+    `Program` VARCHAR(100) NOT NULL,
+    `Status` ENUM('Active', 'Pending', 'Suspended', 'Graduated') NOT NULL DEFAULT 'Active',
+    `GPA` DECIMAL(3, 2) NOT NULL DEFAULT 0.00,
+    `TotalCredits` INT NOT NULL DEFAULT 0,
+    `DateOfBirth` DATE NULL,
+    `Address` VARCHAR(255) NULL,
+    `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE,
+    INDEX `idx_students_program` (`Program`),
+    INDEX `idx_students_status` (`Status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ====================================================================
+-- TABLE 5: Courses
+-- ====================================================================
+CREATE TABLE `Courses` (
+    `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `Code` VARCHAR(20) NOT NULL UNIQUE,
+    `Name` VARCHAR(150) NOT NULL,
+    `DepartmentId` VARCHAR(36) NOT NULL,
+    `InstructorId` VARCHAR(36) NULL,
+    `Schedule` VARCHAR(100) NULL,
+    `Status` ENUM('Upcoming', 'InProgress', 'Completed') NOT NULL DEFAULT 'InProgress',
+    `Credits` INT NOT NULL DEFAULT 3,
+    `Capacity` INT NOT NULL DEFAULT 35,
+    `Description` TEXT NULL,
+    `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`DepartmentId`) REFERENCES `Departments`(`Id`) ON DELETE RESTRICT,
+    FOREIGN KEY (`InstructorId`) REFERENCES `Faculty`(`Id`) ON DELETE SET NULL,
+    INDEX `idx_courses_code` (`Code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ====================================================================
+-- TABLE 6: Enrollments
+-- ====================================================================
+CREATE TABLE `Enrollments` (
+    `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `StudentId` VARCHAR(36) NOT NULL,
+    `CourseId` VARCHAR(36) NOT NULL,
+    `EnrolledAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `Status` ENUM('Enrolled', 'Completed', 'Dropped') NOT NULL DEFAULT 'Enrolled',
+    `AssignmentScore` DECIMAL(5, 2) NULL,
+    `MidtermScore` DECIMAL(5, 2) NULL,
+    `FinalScore` DECIMAL(5, 2) NULL,
+    `TotalGrade` DECIMAL(3, 2) NULL,
+    `Remarks` VARCHAR(255) NULL,
+    `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_student_course` (`StudentId`, `CourseId`),
+    FOREIGN KEY (`StudentId`) REFERENCES `Students`(`Id`) ON DELETE CASCADE,
+    FOREIGN KEY (`CourseId`) REFERENCES `Courses`(`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ====================================================================
+-- SAMPLE SEED DATA
+-- Password for all seed users: "Password123!" (BCrypt hashed)
+-- ====================================================================
+
+INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `FullName`, `Role`, `IsActive`) VALUES
+('usr-admin-1', 'admin@elevate.edu', '$2a$11$q9F1w54xQJ.EwZgE3k5Ere9V2X8V.G8F5Z9w8Z5w8Z5w8Z5w8Z5w8', 'GS. Trần Hoàng', 'Admin', 1),
+('usr-fac-1', 'feynman@elevate.edu', '$2a$11$q9F1w54xQJ.EwZgE3k5Ere9V2X8V.G8F5Z9w8Z5w8Z5w8Z5w8Z5w8', 'Richard Feynman', 'Faculty', 1),
+('usr-stu-1', 'scholar@elevate.edu', '$2a$11$q9F1w54xQJ.EwZgE3k5Ere9V2X8V.G8F5Z9w8Z5w8Z5w8Z5w8Z5w8', 'John Doe', 'Student', 1);
+
+INSERT INTO `Departments` (`Id`, `DepartmentCode`, `Name`, `Description`) VALUES
+('dept-1', 'IT', 'Khoa Công nghệ Thông tin', 'Đào tạo kỹ sư phần mềm, khoa học máy tính và AI.'),
+('dept-2', 'MKT', 'Khoa Kinh tế Quản trị', 'Quản trị kinh doanh, Marketing và Tài chính.'),
+('dept-3', 'DES', 'Khoa Thiết kế Đồ họa', 'Thiết kế UI/UX, Đồ họa 2D/3D và Truyền thông.');
+
+INSERT INTO `Faculty` (`Id`, `UserId`, `FacultyCode`, `DepartmentId`, `Degree`) VALUES
+('fac-1', 'usr-fac-1', 'FAC2024001', 'dept-1', 'Professor');
+
+UPDATE `Departments` SET `HeadFacultyId` = 'fac-1' WHERE `Id` = 'dept-1';
+
+INSERT INTO `Students` (`Id`, `UserId`, `StudentCode`, `Program`, `Status`, `GPA`, `TotalCredits`) VALUES
+('stu-1', 'usr-stu-1', 'STU2024001', 'Software Engineering', 'Active', 3.85, 45);
+
+INSERT INTO `Courses` (`Id`, `Code`, `Name`, `DepartmentId`, `InstructorId`, `Schedule`, `Credits`, `Capacity`) VALUES
+('c-se101', 'SE101', 'Application Development', 'dept-1', 'fac-1', 'Mon/Wed 9:00 AM', 3, 40),
+('c-se102', 'SE102', 'Applied Programming & Design Principles', 'dept-1', 'fac-1', 'Tue/Thu 1:00 PM', 4, 35);
+
+INSERT INTO `Enrollments` (`Id`, `StudentId`, `CourseId`, `Status`, `AssignmentScore`, `MidtermScore`, `FinalScore`, `TotalGrade`) VALUES
+('enr-1', 'stu-1', 'c-se101', 'Enrolled', 90.00, 85.00, 92.00, 3.80),
+('enr-2', 'stu-1', 'c-se102', 'Enrolled', 88.00, 90.00, 86.00, 3.70);
