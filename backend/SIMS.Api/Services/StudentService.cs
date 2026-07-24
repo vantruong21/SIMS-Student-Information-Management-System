@@ -54,18 +54,23 @@ public class StudentService : IStudentService
         var studentId = $"STU-{Guid.NewGuid().ToString()[..8].ToUpper()}";
         var userId = Guid.NewGuid().ToString();
 
-        // Create User account with default password "elevate2026" hashed
+        var rawPassword = !string.IsNullOrWhiteSpace(dto.Password)
+            ? dto.Password
+            : "elevate2026";
+
+        // Create User account
         var user = new User
         {
             Id = userId,
             FullName = dto.Name,
             Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("elevate2026", workFactor: 11),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(rawPassword, workFactor: 11),
             Role = "Student",
             Phone = dto.Phone,
             IsActive = dto.Status is null || dto.Status == "Active"
         };
         await _userRepo.CreateAsync(user);
+
 
         // Create Student profile
         DateOnly? dob = null;

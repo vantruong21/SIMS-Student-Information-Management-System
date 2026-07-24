@@ -79,8 +79,13 @@ export const studentsApi = {
   getById: (id: string) => get<import('./types').Student>(`/students/${id}`),
   create: (data: {
     name: string; email: string; program: string;
-    phone?: string; dateOfBirth?: string; address?: string; status?: string;
+    phone?: string; dateOfBirth?: string; address?: string; status?: string; password?: string;
   }) => post<void>('/students', data),
+  /** Public self-registration (no auth required). Always sets status=Pending. */
+  register: (data: {
+    name: string; email: string; program: string;
+    phone?: string; address?: string; password: string;
+  }) => post<void>('/students/register', data),
   update: (id: string, data: { name?: string; email?: string; program?: string; status?: string }) =>
     put<void>(`/students/${id}`, data),
   delete: (id: string) => del<void>(`/students/${id}`),

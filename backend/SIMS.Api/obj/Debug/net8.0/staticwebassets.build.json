@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "4xk3zXbJv+bWQL9PRfdXHbGGUgI7csqkKqoaB/iCWmY=",
+  "Source": "SIMS.Api",
+  "BasePath": "_content/SIMS.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

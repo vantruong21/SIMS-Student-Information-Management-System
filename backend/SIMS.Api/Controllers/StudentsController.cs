@@ -27,7 +27,7 @@ public class StudentsController : ControllerBase
         return student is null ? NotFound() : Ok(student);
     }
 
-    /// <summary>POST /api/students — Admin tạo sinh viên mới.</summary>
+    /// <summary>POST /api/students — Admin tạo sinh viên mới (Yêu cầu Admin role).</summary>
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateStudentDto dto)
@@ -35,6 +35,18 @@ public class StudentsController : ControllerBase
         var (success, errors) = await _service.CreateAsync(dto);
         if (!success) return BadRequest(new { errors });
         return StatusCode(201, new { message = "Student created successfully" });
+    }
+
+    /// <summary>POST /api/students/register — Sinh viên tự đăng ký (Public, không cần Auth). Status luôn là Pending.</summary>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Register([FromBody] CreateStudentDto dto)
+    {
+        // Force status = Pending for public registration (Admin phải duyệt sau)
+        var pendingDto = dto with { Status = "Pending" };
+        var (success, errors) = await _service.CreateAsync(pendingDto);
+        if (!success) return BadRequest(new { errors });
+        return StatusCode(201, new { message = "Application submitted. Please wait for admin approval." });
     }
 
     /// <summary>PUT /api/students/{id} — Admin cập nhật thông tin sinh viên.</summary>

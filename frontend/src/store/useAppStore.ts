@@ -55,7 +55,7 @@ interface AppState {
   // Student
   addStudent: (data: {
     name: string; email: string; program: string;
-    phone?: string; dateOfBirth?: string; address?: string; status?: string;
+    phone?: string; dateOfBirth?: string; address?: string; status?: string; password?: string;
   }) => Promise<{ success: boolean; errors?: string[] }>;
   deleteStudent: (studentId: string) => Promise<boolean>;
   updateStudentStatus: (studentId: string, status: string) => Promise<boolean>;
@@ -177,16 +177,34 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ── Student Actions ───────────────────────────────────────────────────────
 
   addStudent: async (data) => {
-    if (!requireRoles(['Admin'])) return { success: false, errors: ['Unauthorized'] };
+    const isAdmin = useAuthStore.getState().user?.role === 'Admin';
     try {
-      await studentsApi.create(data);
-      const students = await studentsApi.getAll();
-      set({ students });
+      if (isAdmin) {
+        // Admin tạo sinh viên → POST /students (yêu cầu Admin JWT)
+        await studentsApi.create({
+          ...data,
+          status: data.status ?? 'Active',
+        });
+        const students = await studentsApi.getAll();
+        set({ students });
+      } else {
+        // Sinh viên tự đăng ký → POST /students/register (public, không cần JWT)
+        await studentsApi.register({
+          name: data.name,
+          email: data.email,
+          program: data.program,
+          phone: data.phone,
+          address: data.address,
+          password: (data as any).password ?? 'elevate2026',
+        });
+        // Không reload students list vì user chưa là Admin để xem
+      }
       return { success: true };
     } catch (err: any) {
       return { success: false, errors: [err.message] };
     }
   },
+
 
   deleteStudent: async (id) => {
     if (!requireRoles(['Admin'])) return false;

@@ -9,13 +9,14 @@ import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 
 interface AdminCourseManagementProps {
-  courses: Course[];
+  // courses prop kept for backward compatibility but courses now comes from store
+  courses?: any[];
 }
 
-
-
-export const AdminCourseManagement: React.FC<AdminCourseManagementProps> = ({ courses }) => {
+export const AdminCourseManagement: React.FC<AdminCourseManagementProps> = () => {
+  const courses = useAppStore(state => state.courses);  // ← reactive from store
   const faculty = useAppStore(state => state.faculty);
+
   const activeFaculty = faculty.filter(f => f.isActive !== false);
   const addCourse = useAppStore(state => state.addCourse);
   const updateCourse = useAppStore(state => state.updateCourse);

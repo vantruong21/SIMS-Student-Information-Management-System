@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle, Info, User, Phone, MapPin, Calendar, ChevronLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle, Info, User, Phone, MapPin, ChevronLeft } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import { AppFacade } from '../facades/AppFacade';
+import { useAppStore } from '../store/useAppStore';
 import { LiveRegion } from './common/Accessibility';
 
 /**
@@ -28,7 +28,13 @@ export const LoginScreen: React.FC = () => {
   const [regProgram, setRegProgram] = useState('Software Engineering');
   const [regPhone, setRegPhone] = useState('');
   const [regAddress, setRegAddress] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirm, setShowRegConfirm] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+
+  const addStudent = useAppStore(state => state.addStudent);
 
   const emailRef = useRef<HTMLInputElement>(null);
   const regNameRef = useRef<HTMLInputElement>(null);
@@ -76,27 +82,37 @@ export const LoginScreen: React.FC = () => {
       setScreenReaderMessage('Please enter name and email.');
       return;
     }
+    if (!regPassword || regPassword.length < 6) {
+      useAuthStore.setState({ error: 'Password must be at least 6 characters.' });
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      useAuthStore.setState({ error: 'Passwords do not match.' });
+      return;
+    }
 
     setIsRegistering(true);
     setScreenReaderMessage('Submitting registration...');
-    
-    const facade = AppFacade.getInstance();
-    const result = facade.registerStudent({
+
+    // Gọi Backend API tạo sinh viên với status Pending và mật khẩu tự chọn
+    const result = await addStudent({
       name: regName.trim(),
       email: regEmail.trim(),
       program: regProgram,
       phone: regPhone.trim(),
       address: regAddress.trim(),
-    });
+      status: 'Pending',
+      password: regPassword,
+    } as any);
 
     setIsRegistering(false);
 
     if (result.success) {
-      setInfoMessage('Application submitted successfully! Please wait for admin approval.');
+      setInfoMessage('Application submitted! Please wait for admin approval before logging in.');
       setMode('login');
       setScreenReaderMessage('Registration successful. Returning to login.');
-      // Reset form
-      setRegName(''); setRegEmail(''); setRegPhone(''); setRegAddress('');
+      setRegName(''); setRegEmail(''); setRegPhone('');
+      setRegAddress(''); setRegPassword(''); setRegConfirmPassword('');
     } else {
       setScreenReaderMessage(`Registration failed: ${result.errors?.[0]}`);
       useAuthStore.setState({ error: result.errors?.[0] });
@@ -359,19 +375,63 @@ export const LoginScreen: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="regAddress" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">Address (Optional)</label>
-            <div className="relative group/input">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
-                <MapPin className="w-4 h-4" />
+          {/* Password fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="regPassword" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">
+                Password <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  id="regPassword"
+                  type={showRegPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="Min. 6 chars"
+                  className="block w-full pl-11 pr-10 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(v => !v)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-indigo-500 transition-colors cursor-pointer"
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-              <input
-                id="regAddress"
-                type="text"
-                value={regAddress}
-                onChange={(e) => setRegAddress(e.target.value)}
-                className="block w-full pl-11 pr-4 py-3 bg-white/75 border border-white/50 rounded-xl text-gray-800 text-sm focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 outline-none"
-              />
+            </div>
+            <div>
+              <label htmlFor="regConfirmPassword" className="block text-xs font-bold text-gray-700 mb-1.5 ml-1">
+                Confirm Password <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within/input:text-indigo-500 transition-colors">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  id="regConfirmPassword"
+                  type={showRegConfirm ? 'text' : 'password'}
+                  required
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  placeholder="Repeat password"
+                  className={`block w-full pl-11 pr-10 py-3 bg-white/75 border rounded-xl text-gray-800 text-sm focus:bg-white focus:ring-4 transition-all duration-300 outline-none ${regConfirmPassword && regPassword !== regConfirmPassword ? 'border-rose-400 focus:ring-rose-100 focus:border-rose-400' : 'border-white/50 focus:border-indigo-400 focus:ring-indigo-100'}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegConfirm(v => !v)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-indigo-500 transition-colors cursor-pointer"
+                >
+                  {showRegConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {regConfirmPassword && regPassword !== regConfirmPassword && (
+                <p className="text-[10px] text-rose-500 mt-1 ml-1">Passwords do not match</p>
+              )}
             </div>
           </div>
 

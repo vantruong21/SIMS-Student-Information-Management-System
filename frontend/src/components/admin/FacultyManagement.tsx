@@ -88,9 +88,10 @@ export const FacultyManagement: React.FC<FacultyManagementProps> = ({
           {(!f.isActive && !f.isLocked) && (
             <button
               title="Approve Faculty"
-              onClick={() => {
-                updateFaculty(f.id, { isActive: true });
-                onShowToast(`Approved faculty profile: ${f.name}`);
+              onClick={async () => {
+                const ok = await updateFaculty(f.id, { isActive: true });
+                if (ok) onShowToast(`Approved faculty profile: ${f.name}`);
+                else onShowToast(`Failed to approve ${f.name}`, 'error');
               }}
               className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg border border-emerald-200 transition-colors group/btn relative"
             >
