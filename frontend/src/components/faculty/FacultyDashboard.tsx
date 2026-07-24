@@ -15,6 +15,8 @@ import { Course, UserProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { GlassPanel } from '../ui/GlassPanel';
 import { Badge } from '../ui/Badge';
+import { useAppStore } from '../../store/useAppStore';
+
 
 interface FacultyDashboardProps {
   user: UserProfile;
@@ -30,6 +32,8 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
   onNavigateTab
 }) => {
   const [simulatedTime, setSimulatedTime] = useState<'morning' | 'afternoon' | 'off'>('morning');
+
+  const { enrollments } = useAppStore();
 
   const facultyCourses = courses.filter(c => c.instructor === user.name);
 
@@ -48,8 +52,9 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
   });
 
   const totalClasses = facultyCourses.length;
-  const totalStudents = facultyCourses.reduce((sum, c) => sum + ((c as any).assignedCount || 0), 0);
-  const gradingProgress = 80;
+  const totalStudents = enrollments.filter(e => facultyCourses.some(c => c.id === e.courseId || c.code === e.courseId)).length;
+  const gradingProgress = 85;
+
 
   return (
     <div className="space-y-6 text-gray-800 animate-in fade-in duration-500 text-left">

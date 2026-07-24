@@ -20,16 +20,33 @@ interface FacultyAttendanceProps {
   onBackToDashboard: () => void;
 }
 
+import { useAppStore } from '../../store/useAppStore';
+
 export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
   slotId,
   slotName,
   onBackToDashboard
 }) => {
   const { facultyClassAttendance, updateFacultyClassAttendance } = useAttendanceStore();
+  const { enrollments, students } = useAppStore();
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  React.useEffect(() => {
+    const classEnrollments = enrollments.filter(e => e.courseId === slotId);
+    const initialList = classEnrollments.map(e => {
+      const student = students.find(s => s.id === e.studentId);
+      return {
+        studentId: e.studentId,
+        studentName: student?.name || 'Unknown Student',
+        status: 'Present' as const
+      };
+    });
+    useAttendanceStore.setState({ facultyClassAttendance: initialList });
+  }, [slotId, enrollments, students]);
+
   const handleSaveAndFreeze = () => {
+
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);
