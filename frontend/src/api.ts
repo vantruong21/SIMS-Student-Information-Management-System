@@ -137,12 +137,13 @@ export const coursesApi = {
 
 export const departmentsApi = {
   getAll: () => get<import('./types').Department[]>('/departments'),
-  create: (data: { name: string; head: string; description: string; facultyCount?: number }) =>
+  create: (data: { name: string; head: string; description: string; facultyCount?: number; facultyIds?: string[] }) =>
     post<void>('/departments', data),
-  update: (id: string, data: { name?: string; head?: string; description?: string; facultyCount?: number }) =>
+  update: (id: string, data: { name?: string; head?: string; description?: string; facultyCount?: number; facultyIds?: string[] }) =>
     put<void>(`/departments/${id}`, data),
   delete: (id: string) => del<void>(`/departments/${id}`),
 };
+
 
 // ─── ENROLLMENTS ──────────────────────────────────────────────────────────────
 

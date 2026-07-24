@@ -258,7 +258,13 @@ public class CourseService : ICourseService
 public class DepartmentService : IDepartmentService
 {
     private readonly IDepartmentRepository _deptRepo;
-    public DepartmentService(IDepartmentRepository deptRepo) => _deptRepo = deptRepo;
+    private readonly IFacultyRepository _facultyRepo;
+
+    public DepartmentService(IDepartmentRepository deptRepo, IFacultyRepository facultyRepo)
+    {
+        _deptRepo = deptRepo;
+        _facultyRepo = facultyRepo;
+    }
 
     public async Task<IEnumerable<DepartmentDto>> GetAllAsync()
     {
@@ -274,14 +280,33 @@ public class DepartmentService : IDepartmentService
 
     public async Task<(bool Success, string[] Errors)> CreateAsync(CreateDepartmentDto dto)
     {
+        var allFaculty = await _facultyRepo.GetAllAsync();
+        var headFaculty = allFaculty.FirstOrDefault(f => f.User.FullName == dto.Head || f.Id == dto.Head);
+
         var dept = new Department
         {
             Id = Guid.NewGuid().ToString(),
             DepartmentCode = $"DEPT{new Random().Next(100, 999)}",
             Name = dto.Name,
+            HeadFacultyId = headFaculty?.Id,
             Description = dto.Description
         };
         await _deptRepo.CreateAsync(dept);
+
+        // Gán các giảng viên được chọn vào khoa này
+        if (dto.FacultyIds != null && dto.FacultyIds.Length > 0)
+        {
+            foreach (var fId in dto.FacultyIds)
+            {
+                var fac = allFaculty.FirstOrDefault(f => f.Id == fId || f.User.FullName == fId);
+                if (fac != null)
+                {
+                    fac.DepartmentId = dept.Id;
+                    await _facultyRepo.UpdateAsync(fac);
+                }
+            }
+        }
+
         return (true, []);
     }
 
@@ -291,7 +316,31 @@ public class DepartmentService : IDepartmentService
         if (dept is null) return false;
         if (dto.Name is not null) dept.Name = dto.Name;
         if (dto.Description is not null) dept.Description = dto.Description;
+
+        var allFaculty = await _facultyRepo.GetAllAsync();
+        if (dto.Head is not null)
+        {
+            var headFaculty = allFaculty.FirstOrDefault(f => f.User.FullName == dto.Head || f.Id == dto.Head);
+            dept.HeadFacultyId = headFaculty?.Id;
+        }
         await _deptRepo.UpdateAsync(dept);
+
+        // Đồng bộ các giảng viên thuộc khoa
+        if (dto.FacultyIds != null)
+        {
+            foreach (var fac in allFaculty)
+            {
+                if (dto.FacultyIds.Contains(fac.Id) || dto.FacultyIds.Contains(fac.User.FullName))
+                {
+                    if (fac.DepartmentId != dept.Id)
+                    {
+                        fac.DepartmentId = dept.Id;
+                        await _facultyRepo.UpdateAsync(fac);
+                    }
+                }
+            }
+        }
+
         return true;
     }
 
@@ -305,6 +354,7 @@ public class DepartmentService : IDepartmentService
         d.Faculties.Count
     );
 }
+
 
 public class EnrollmentService : IEnrollmentService
 {

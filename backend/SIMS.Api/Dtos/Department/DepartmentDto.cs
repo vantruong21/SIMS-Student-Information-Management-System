@@ -19,7 +19,8 @@ public record CreateDepartmentDto(
     [Required][MaxLength(100)] string Name,
     [Required] string Head,
     string Description,
-    int? FacultyCount
+    int? FacultyCount,
+    string[]? FacultyIds
 );
 
 /// <summary>Request body cập nhật khoa. Khớp với updateDepartment() trong AppFacade.ts.</summary>
@@ -27,5 +28,7 @@ public record UpdateDepartmentDto(
     string? Name,
     string? Head,
     string? Description,
-    int? FacultyCount
+    int? FacultyCount,
+    string[]? FacultyIds
 );
+

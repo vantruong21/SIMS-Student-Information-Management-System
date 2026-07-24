@@ -100,12 +100,15 @@ interface AppState {
 
   // Department
   addDepartment: (data: {
-    name: string; head: string; description: string; facultyCount?: number;
+    name: string; head: string; description: string;
+    facultyCount?: number; facultyIds?: string[];
   }) => Promise<{ success: boolean; errors?: string[] }>;
   updateDepartment: (id: string, data: Partial<{
-    name: string; head: string; description: string; facultyCount: number;
+    name: string; head: string; description: string;
+    facultyCount: number; facultyIds: string[];
   }>) => Promise<boolean>;
   deleteDepartment: (id: string) => Promise<boolean>;
+
 
   // User profile
   updateUserProfile: (email: string, data: { phone?: string; password?: string }) => Promise<boolean>;
@@ -415,7 +418,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await departmentsApi.create(data);
       const departments = await departmentsApi.getAll();
-      set({ departments });
+      const faculty = await facultyApi.getAll();
+      set({ departments, faculty });
       return { success: true };
     } catch (err: any) {
       return { success: false, errors: [err.message] };
@@ -427,12 +431,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await departmentsApi.update(id, data);
       const departments = await departmentsApi.getAll();
-      set({ departments });
+      const faculty = await facultyApi.getAll();
+      set({ departments, faculty });
       return true;
     } catch {
       return false;
     }
   },
+
 
   deleteDepartment: async (id) => {
     if (!requireRoles(['Admin'])) return false;
