@@ -12,7 +12,7 @@ public record FacultyDto(
     string Designation,      // Học vị: "Master" | "PhD" | "Professor"
     string[] CoursesTaught,  // Danh sách tên môn đang dạy
     string? AvatarUrl,
-    string Status,           // "Active" | "On Leave"
+    string Status,           // "Active" | "Pending" | "Locked"
     bool IsLocked,
     string? Phone
 );

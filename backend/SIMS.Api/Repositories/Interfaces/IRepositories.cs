@@ -26,6 +26,7 @@ public interface IDepartmentRepository
     Task<IEnumerable<Department>> GetAllAsync();
     Task<Department?> GetByIdAsync(string id);
     Task<bool> CodeExistsAsync(string code);
+    Task<string?> GetFirstIdAsync();
     Task<Department> CreateAsync(Department department);
     Task<Department> UpdateAsync(Department department);
     Task<bool> DeleteAsync(string id);

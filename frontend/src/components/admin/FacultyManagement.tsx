@@ -74,8 +74,8 @@ export const FacultyManagement: React.FC<FacultyManagementProps> = ({
       header: 'Status',
       key: 'status',
       render: (f) => (
-        <Badge variant={f.isLocked ? 'error' : f.isActive ? 'success' : 'warning'} dot>
-          {f.isLocked ? 'Locked' : f.isActive ? 'Active' : 'Pending'}
+        <Badge variant={f.isLocked ? 'error' : f.status === 'Active' ? 'success' : 'warning'} dot>
+          {f.isLocked ? 'Locked' : f.status === 'Active' ? 'Active' : 'Pending'}
         </Badge>
       )
     },
@@ -85,7 +85,7 @@ export const FacultyManagement: React.FC<FacultyManagementProps> = ({
       className: 'text-right',
       render: (f) => (
         <div className="flex items-center justify-end gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-          {(!f.isActive && !f.isLocked) && (
+          {(f.status !== 'Active' && !f.isLocked) && (
             <button
               title="Approve Faculty"
               onClick={async () => {

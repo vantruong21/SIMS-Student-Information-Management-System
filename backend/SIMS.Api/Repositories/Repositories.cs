@@ -169,6 +169,9 @@ public class DepartmentRepository : IDepartmentRepository
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<string?> GetFirstIdAsync() =>
+        await _db.Departments.Select(d => d.Id).FirstOrDefaultAsync();
 }
 
 public class CourseRepository : ICourseRepository

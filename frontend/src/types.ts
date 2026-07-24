@@ -31,7 +31,7 @@ export interface Faculty {
   designation: string;
   coursesTaught: string[];
   avatarUrl?: string;
-  status: 'Active' | 'On Leave';
+  status: 'Active' | 'On Leave' | 'Pending' | 'Locked';
   isLocked?: boolean;
   phone?: string;
 }

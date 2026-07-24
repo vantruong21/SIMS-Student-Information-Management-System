@@ -58,7 +58,7 @@ public class FacultyService : IFacultyService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("elevate2026", workFactor: 11),
             Role = "Faculty",
             Phone = dto.Phone,
-            IsActive = true
+            IsActive = false   // Mới tạo → Pending (Admin phải Approve)
         };
         await _userRepo.CreateAsync(user);
 
@@ -107,7 +107,7 @@ public class FacultyService : IFacultyService
         f.Degree,
         coursesTaught,
         f.User.AvatarUrl,
-        f.User.IsActive ? "Active" : "On Leave",
+        f.User.IsLocked ? "Locked" : f.User.IsActive ? "Active" : "Pending",
         f.User.IsLocked,
         f.User.Phone
     );
@@ -117,11 +117,13 @@ public class CourseService : ICourseService
 {
     private readonly ICourseRepository _courseRepo;
     private readonly IFacultyRepository _facultyRepo;
+    private readonly IDepartmentRepository _deptRepo;
 
-    public CourseService(ICourseRepository courseRepo, IFacultyRepository facultyRepo)
+    public CourseService(ICourseRepository courseRepo, IFacultyRepository facultyRepo, IDepartmentRepository deptRepo)
     {
         _courseRepo = courseRepo;
         _facultyRepo = facultyRepo;
+        _deptRepo = deptRepo;
     }
 
     public async Task<IEnumerable<CourseDto>> GetAllAsync()
@@ -145,6 +147,19 @@ public class CourseService : ICourseService
         var allFaculty = await _facultyRepo.GetAllAsync();
         var instructor = allFaculty.FirstOrDefault(f => f.User.FullName == dto.Instructor);
 
+        // Lấy department ID đầu tiên trong DB thành fallback (thay vì hardcode 'dept-default' không tồn tại)
+        string? deptId = null;
+        if (!string.IsNullOrWhiteSpace(dto.Department) && dto.Department != "dept-default")
+        {
+            deptId = dto.Department;
+        }
+        else
+        {
+            // Lấy bất kỳ department nào tồn tại
+            var firstDept = await _deptRepo.GetFirstIdAsync();
+            deptId = firstDept;
+        }
+
         var course = new Course
         {
             Id = Guid.NewGuid().ToString(),
@@ -154,7 +169,7 @@ public class CourseService : ICourseService
             Schedule = dto.Schedule,
             Credits = dto.Credits,
             Capacity = dto.Capacity ?? 35,
-            DepartmentId = dto.Department ?? "dept-default"
+            DepartmentId = deptId ?? "dept-1"  // fallback
         };
         await _courseRepo.CreateAsync(course);
         return (true, []);

@@ -42,10 +42,15 @@ async function request<T>(
     let errorMsg = `HTTP ${response.status}`;
     try {
       const errorBody = await response.json();
-      errorMsg = errorBody.error || errorMsg;
+      // Backend có thể trả về { error: '...' } hoặc { errors: ['...', ...] }
+      if (errorBody.error) errorMsg = errorBody.error;
+      else if (errorBody.errors && Array.isArray(errorBody.errors)) errorMsg = errorBody.errors[0];
+      else if (errorBody.message) errorMsg = errorBody.message;
+      else if (typeof errorBody === 'string') errorMsg = errorBody;
     } catch {
       // ignore parse error
     }
+    console.error(`[API Error] ${response.status} ${response.url}: ${errorMsg}`);
     throw new Error(errorMsg);
   }
 
