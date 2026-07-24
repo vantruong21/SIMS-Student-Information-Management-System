@@ -155,7 +155,7 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
       name: newName,
       email: newEmail,
       program: newProgram,
-      status: newStatus as any
+      status: newStatus
     } as any);
 
     if (res && res.success === false) {
@@ -169,8 +169,11 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
     setNewEmail('');
     setNewProgram('Software Engineering');
     setNewStatus('Active');
+    setStatusFilter('All');
+    setProgramFilter('All');
     setIsAddOpen(false);
   };
+
 
   const handleImportComplete = (imported: Student[]) => {
     onImportLocalStudents(imported);
@@ -285,7 +288,7 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Program</label>
                   <select
@@ -298,7 +301,20 @@ export const UsersDataTable: React.FC<UsersDataTableProps> = ({
                     <option value="Graphic Design">Graphic Design</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Initial Status</label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as 'Active' | 'Pending')}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/50 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm cursor-pointer"
+                  >
+                    <option value="Active">Active (Approved)</option>
+                    <option value="Pending">Pending (Needs Review)</option>
+                  </select>
+                </div>
               </div>
+
 
               <div className="pt-4 flex gap-3">
                 <Button 
