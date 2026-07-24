@@ -154,12 +154,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return (
           <DepartmentManagement />
         );
+      case 'faculty':
+        return (
+          <FacultyManagement 
+            searchQuery={searchQuery}
+            onShowToast={showToast}
+          />
+        );
       case 'settings':
         return (
           <SystemSettings onShowToast={showToast} />
         );
       case 'profile':
         return null;
+
       default:
         return (
           <CommandDashboard 
