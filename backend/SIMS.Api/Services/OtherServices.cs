@@ -14,13 +14,20 @@ public class FacultyService : IFacultyService
     private readonly IFacultyRepository _facultyRepo;
     private readonly IUserRepository _userRepo;
     private readonly ICourseRepository _courseRepo;
+    private readonly IDepartmentRepository _deptRepo;
 
-    public FacultyService(IFacultyRepository facultyRepo, IUserRepository userRepo, ICourseRepository courseRepo)
+    public FacultyService(
+        IFacultyRepository facultyRepo,
+        IUserRepository userRepo,
+        ICourseRepository courseRepo,
+        IDepartmentRepository deptRepo)
     {
         _facultyRepo = facultyRepo;
         _userRepo = userRepo;
         _courseRepo = courseRepo;
+        _deptRepo = deptRepo;
     }
+
 
     public async Task<IEnumerable<FacultyDto>> GetAllAsync()
     {
@@ -62,17 +69,28 @@ public class FacultyService : IFacultyService
         };
         await _userRepo.CreateAsync(user);
 
+        string? deptId = null;
+        if (!string.IsNullOrWhiteSpace(dto.Department) && dto.Department != "dept-default")
+        {
+            deptId = dto.Department;
+        }
+        else
+        {
+            deptId = await _deptRepo.GetFirstIdAsync();
+        }
+
         var faculty = new Faculty
         {
             Id = Guid.NewGuid().ToString(),
             UserId = userId,
             FacultyCode = $"FAC{DateTime.UtcNow.Year}{new Random().Next(1000, 9999)}",
-            DepartmentId = dto.Department ?? "dept-default",
+            DepartmentId = deptId ?? "dept-1",
             Degree = "Master"
         };
         await _facultyRepo.CreateAsync(faculty);
         return (true, []);
     }
+
 
     public async Task<bool> UpdateAsync(string id, UpdateFacultyDto dto)
     {
