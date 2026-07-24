@@ -50,21 +50,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   // Tín chỉ đã tích lũy từ các môn đã đăng ký
   const creditsCompleted = myCourses.reduce((acc, c) => acc + (c.credits || 3), 0);
 
-  // Tính điểm GPA thực tế từ bảng Grades của CSDL
-  const myGrades = grades.filter(g => g.studentId === studentKey || g.studentId === user.id);
+  // Tính điểm GPA thực tế từ các môn học đã có điểm trong DB
+  const gradedEnrollments = myEnrollments.filter(e => e.totalGrade !== null && e.totalGrade !== undefined);
   let computedGpa = studentInfo?.gpa ?? user.gpa ?? 0;
-  if (myGrades.length > 0) {
-    const totalScore = myGrades.reduce((sum, g) => {
-      const avg = (g.assignment || 0) * 0.3 + (g.midterm || 0) * 0.3 + (g.final || 0) * 0.4;
-      let gpaPoint = 0.0;
-      if (avg >= 90) gpaPoint = 4.0;
-      else if (avg >= 80) gpaPoint = 3.5;
-      else if (avg >= 70) gpaPoint = 3.0;
-      else if (avg >= 60) gpaPoint = 2.0;
-      else if (avg >= 50) gpaPoint = 1.0;
-      return sum + gpaPoint;
-    }, 0);
-    computedGpa = totalScore / myGrades.length;
+  if (gradedEnrollments.length > 0) {
+    const totalScore = gradedEnrollments.reduce((sum, e) => sum + Number(e.totalGrade), 0);
+    computedGpa = totalScore / gradedEnrollments.length;
   }
 
   // Môn học tiếp theo (Next Lecture)

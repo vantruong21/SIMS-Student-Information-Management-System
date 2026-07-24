@@ -11,14 +11,25 @@ export const StudentRecords: React.FC = () => {
   const enrollments = useAppStore(state => state.enrollments);
   const grades = useAppStore(state => state.grades);
 
+  const students = useAppStore(state => state.students);
+
+  // Tìm thông tin Sinh viên trùng khớp Email hoặc ID
+  const studentInfo = students.find(s => 
+    s.email?.toLowerCase() === user?.email?.toLowerCase() || 
+    s.id === user?.id || 
+    s.userId === user?.id
+  );
+
+  const studentKey = studentInfo?.id || user?.id;
+
+  // Lấy các môn học đã có điểm (môn học đã hoàn thành)
   const pastCourses = enrollments
-    .filter(e => e.studentId === user?.id)
+    .filter(e => e.studentId === studentKey && e.totalGrade !== null && e.totalGrade !== undefined)
     .map(e => {
-      const c = courses.find(c => c.id === e.courseId);
-      const g = grades.find(g => g.studentId === user?.id && g.courseId === e.courseId);
-      const assignment = g?.assignment || 0;
-      const midterm = g?.midterm || 0;
-      const finalGrade = g?.final || 0;
+      const c = courses.find(c => c.id === e.courseId || c.code === e.courseId);
+      const assignment = e.assignmentScore || 0;
+      const midterm = e.midtermScore || 0;
+      const finalGrade = e.finalScore || 0;
       const avg = assignment * 0.3 + midterm * 0.3 + finalGrade * 0.4;
       
       let letter = 'F';

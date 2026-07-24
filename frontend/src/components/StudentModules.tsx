@@ -54,8 +54,7 @@ export const StudentModules: React.FC = () => {
       if (!c) return null;
       // Get real absences from DB attendance summary
       const summary = attendanceSummary.find(s => s.courseId === c.id);
-      const totalSessions = summary ? summary.totalSessions : 0;
-      const absences = summary ? summary.absentCount + summary.lateCount : 0;
+      const absences = summary ? summary.absentCount : 0;
       return {
         id: c.id,
         code: c.code,
@@ -64,7 +63,7 @@ export const StudentModules: React.FC = () => {
         credits: c.credits || 3,
         department: c.departmentId || 'Computer Science',
         schedule: c.schedule || 'TTH 09:00 - 10:30',
-        totalSessions: totalSessions || 16,
+        totalSessions: 16,
         absences
       };
     })
