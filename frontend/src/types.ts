@@ -55,6 +55,7 @@ export interface Course {
   credits: number;
   capacity?: number;
   assignedCount?: number;
+  instructorEmail?: string;
 }
 
 export interface ClassSession {

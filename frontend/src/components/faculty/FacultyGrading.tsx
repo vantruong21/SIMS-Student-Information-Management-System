@@ -121,7 +121,10 @@ export const FacultyGrading: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {courses.filter(cls => cls.instructor?.toLowerCase() === user?.name?.toLowerCase()).map((cls) => {
+            {courses.filter(cls => 
+              (cls.instructorEmail && cls.instructorEmail.toLowerCase() === user?.email?.toLowerCase()) ||
+              cls.instructor?.toLowerCase() === user?.name?.toLowerCase()
+            ).map((cls) => {
               const classEnrollments = enrollments.filter(e => e.courseId === cls.id);
               return (
                 <div

@@ -25,6 +25,7 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
   
   // Case-insensitive filtering of faculty courses
   const facultyCourses = courses.filter(c => 
+    (c.instructorEmail && c.instructorEmail.toLowerCase() === user?.email?.toLowerCase()) ||
     c.instructor?.toLowerCase() === user?.name?.toLowerCase()
   );
 

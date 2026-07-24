@@ -14,5 +14,6 @@ public record CourseDto(
     decimal? GpaContribution,
     int Credits,
     int? Capacity,
-    int? AssignedCount   // Số sinh viên đã đăng ký — computed field
+    int? AssignedCount,   // Số sinh viên đã đăng ký — computed field
+    string? InstructorEmail = null
 );

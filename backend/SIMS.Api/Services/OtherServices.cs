@@ -254,7 +254,8 @@ public class CourseService : ICourseService
         null,
         c.Credits,
         c.Capacity,
-        c.Enrollments.Count
+        c.Enrollments.Count,
+        c.Instructor?.User.Email
     );
 }
 
