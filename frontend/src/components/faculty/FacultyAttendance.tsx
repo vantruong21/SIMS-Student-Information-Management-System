@@ -28,13 +28,22 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
   onBackToDashboard
 }) => {
   const { facultyClassAttendance, updateFacultyClassAttendance } = useAttendanceStore();
-  const { enrollments, students } = useAppStore();
+  const { enrollments, students, courses } = useAppStore();
   const [isSaving, setIsSaving] = useState(false);
+
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   React.useEffect(() => {
-    const classEnrollments = enrollments.filter(e => e.courseId === slotId);
-    const initialList = classEnrollments.map(e => {
+    const course = courses.find(c => c.id === slotId || c.code === slotId);
+    
+    // Filter official enrollments matching by GUID or Course Code
+    const classEnrollments = enrollments.filter(e => 
+      e.courseId === slotId || 
+      (course && e.courseId === course.id) || 
+      (course && e.courseId === course.code)
+    );
+
+    let initialList = classEnrollments.map(e => {
       const student = students.find(s => s.id === e.studentId);
       return {
         studentId: e.studentId,
@@ -42,10 +51,21 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
         status: 'Present' as const
       };
     });
+
+    // Fallback: Nếu lớp học mới chưa có học viên nào đăng ký chính thức, tự động hiển thị học viên từ CSDL để Giảng viên kiểm thử tính năng điểm danh
+    if (initialList.length === 0 && students.length > 0) {
+      initialList = students.map(s => ({
+        studentId: s.id,
+        studentName: s.name,
+        status: 'Present' as const
+      }));
+    }
+
     useAttendanceStore.setState({ facultyClassAttendance: initialList });
-  }, [slotId, enrollments, students]);
+  }, [slotId, enrollments, students, courses]);
 
   const handleSaveAndFreeze = () => {
+
 
     setIsSaving(true);
     setTimeout(() => {
