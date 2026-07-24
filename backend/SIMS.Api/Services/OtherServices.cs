@@ -84,11 +84,12 @@ public class FacultyService : IFacultyService
             deptId = await _deptRepo.GetFirstIdAsync();
         }
 
+        var facultyId = $"FAC-{Guid.NewGuid().ToString()[..8].ToUpper()}";
         var faculty = new Faculty
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = facultyId,
             UserId = userId,
-            FacultyCode = $"FAC{DateTime.UtcNow.Year}{new Random().Next(1000, 9999)}",
+            FacultyCode = facultyId,
             DepartmentId = deptId ?? "dept-1",
             Degree = "Master"
         };
@@ -122,18 +123,26 @@ public class FacultyService : IFacultyService
         return true;
     }
 
-    private static FacultyDto MapToDto(Faculty f, string[] coursesTaught) => new(
-        f.Id,
-        f.User.FullName,
-        f.User.Email,
-        f.Department?.Name ?? string.Empty,
-        f.Degree,
-        coursesTaught,
-        f.User.AvatarUrl,
-        f.User.IsLocked ? "Locked" : f.User.IsActive ? "Active" : "Pending",
-        f.User.IsLocked,
-        f.User.Phone
-    );
+    private static FacultyDto MapToDto(Faculty f, string[] coursesTaught)
+    {
+        var displayId = f.Id.StartsWith("FAC-") || f.Id.StartsWith("fac-")
+            ? f.Id
+            : $"FAC-{f.Id[..8].ToUpper()}";
+
+        return new(
+            displayId,
+            f.User.FullName,
+            f.User.Email,
+            f.Department?.Name ?? string.Empty,
+            f.Degree,
+            coursesTaught,
+            f.User.AvatarUrl,
+            f.User.IsLocked ? "Locked" : f.User.IsActive ? "Active" : "Pending",
+            f.User.IsLocked,
+            f.User.Phone
+        );
+    }
+
 }
 
 public class CourseService : ICourseService
