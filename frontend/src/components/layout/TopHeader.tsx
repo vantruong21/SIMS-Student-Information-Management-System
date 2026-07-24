@@ -14,6 +14,7 @@ interface TopHeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onMenuToggle: () => void;
+  onNavigateTab?: (tabId: string) => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -22,7 +23,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userAvatar,
   searchQuery,
   setSearchQuery,
-  onMenuToggle
+  onMenuToggle,
+  onNavigateTab
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -84,9 +86,33 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <GlobalSearchDropdown 
                 query={searchQuery} 
                 onClose={() => setIsSearchOpen(false)} 
-                onSelect={(item) => {
-                  console.log("Selected from search:", item);
+                onSelect={({ type, data }) => {
                   setIsSearchOpen(false);
+                  
+                  if (userRole === 'Admin') {
+                    if (type === 'student') {
+                      setSearchQuery(data.name || data.email || '');
+                      onNavigateTab?.('students');
+                    } else if (type === 'faculty') {
+                      setSearchQuery(data.name || data.email || '');
+                      onNavigateTab?.('faculty');
+                    } else if (type === 'course') {
+                      setSearchQuery(data.name || data.code || '');
+                      onNavigateTab?.('courses');
+                    }
+                  } else if (userRole === 'Faculty') {
+                    if (type === 'student') {
+                      setSearchQuery(data.name || '');
+                      onNavigateTab?.('grading');
+                    } else if (type === 'course') {
+                      setSearchQuery(data.name || '');
+                      onNavigateTab?.('dashboard');
+                    }
+                  } else if (userRole === 'Student') {
+                    if (type === 'course') {
+                      onNavigateTab?.('modules');
+                    }
+                  }
                 }} 
               />
             )}

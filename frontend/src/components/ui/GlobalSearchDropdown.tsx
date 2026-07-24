@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 interface GlobalSearchDropdownProps {
   query: string;
   onClose: () => void;
-  onSelect: (item: any) => void;
+  onSelect: (result: { type: 'student' | 'faculty' | 'course'; data: any }) => void;
 }
 
 export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ query, onClose, onSelect }) => {
@@ -41,8 +41,8 @@ export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ quer
                 {matchedStudents.map(s => (
                   <button 
                     key={s.id} 
-                    onClick={() => { onSelect(s); onClose(); }}
-                    className="w-full flex items-center justify-between p-3 hover:bg-indigo-50/50 rounded-2xl transition-colors text-left group"
+                    onClick={() => { onSelect({ type: 'student', data: s }); onClose(); }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-indigo-50/50 rounded-2xl transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
@@ -65,8 +65,8 @@ export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ quer
                 {matchedFaculty.map(f => (
                   <button 
                     key={f.id} 
-                    onClick={() => { onSelect(f); onClose(); }}
-                    className="w-full flex items-center justify-between p-3 hover:bg-indigo-50/50 rounded-2xl transition-colors text-left group"
+                    onClick={() => { onSelect({ type: 'faculty', data: f }); onClose(); }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-indigo-50/50 rounded-2xl transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
@@ -89,8 +89,8 @@ export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ quer
                 {matchedCourses.map(c => (
                   <button 
                     key={c.id} 
-                    onClick={() => { onSelect(c); onClose(); }}
-                    className="w-full flex items-center justify-between p-3 hover:bg-indigo-50/50 rounded-2xl transition-colors text-left group"
+                    onClick={() => { onSelect({ type: 'course', data: c }); onClose(); }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-indigo-50/50 rounded-2xl transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">

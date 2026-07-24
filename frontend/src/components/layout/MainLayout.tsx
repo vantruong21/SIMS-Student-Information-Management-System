@@ -50,7 +50,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onMenuToggle={() => setIsMobileNavOpen(!isMobileNavOpen)}
+          onNavigateTab={setCurrentTab}
         />
+
 
         {/* Scrollable Tab Content Container */}
         <main id="main-content" className="flex-1 overflow-visible h-full flex flex-col" role="main" aria-label="Main content area">
