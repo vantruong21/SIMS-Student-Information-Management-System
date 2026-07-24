@@ -18,17 +18,20 @@ public class FacultyService : IFacultyService
     private readonly IUserRepository _userRepo;
     private readonly ICourseRepository _courseRepo;
     private readonly IDepartmentRepository _deptRepo;
+    private readonly IIdGeneratorService _idGen;
 
     public FacultyService(
         IFacultyRepository facultyRepo,
         IUserRepository userRepo,
         ICourseRepository courseRepo,
-        IDepartmentRepository deptRepo)
+        IDepartmentRepository deptRepo,
+        IIdGeneratorService idGen)
     {
         _facultyRepo = facultyRepo;
         _userRepo = userRepo;
         _courseRepo = courseRepo;
         _deptRepo = deptRepo;
+        _idGen = idGen;
     }
 
 
@@ -63,7 +66,7 @@ public class FacultyService : IFacultyService
         if (existingUser is not null)
             return (false, ["A user or faculty member with this email already exists"]);
 
-        var userId = Guid.NewGuid().ToString();
+        var userId = await _idGen.GenerateNextIdAsync<User>("usr-f-");
         var user = new User
         {
             Id = userId,
@@ -87,7 +90,7 @@ public class FacultyService : IFacultyService
             deptId = await _deptRepo.GetFirstIdAsync();
         }
 
-        var facultyId = $"FAC-{Guid.NewGuid().ToString()[..8].ToUpper()}";
+        var facultyId = await _idGen.GenerateNextIdAsync<Faculty>("fac-");
         var faculty = new Faculty
         {
             Id = facultyId,
@@ -153,12 +156,14 @@ public class CourseService : ICourseService
     private readonly ICourseRepository _courseRepo;
     private readonly IFacultyRepository _facultyRepo;
     private readonly IDepartmentRepository _deptRepo;
+    private readonly IIdGeneratorService _idGen;
 
-    public CourseService(ICourseRepository courseRepo, IFacultyRepository facultyRepo, IDepartmentRepository deptRepo)
+    public CourseService(ICourseRepository courseRepo, IFacultyRepository facultyRepo, IDepartmentRepository deptRepo, IIdGeneratorService idGen)
     {
         _courseRepo = courseRepo;
         _facultyRepo = facultyRepo;
         _deptRepo = deptRepo;
+        _idGen = idGen;
     }
 
     public async Task<IEnumerable<CourseDto>> GetAllAsync()
@@ -197,7 +202,7 @@ public class CourseService : ICourseService
 
         var course = new Course
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = await _idGen.GenerateNextIdAsync<Course>("crs-"),
             Code = dto.Code,
             Name = dto.Name,
             InstructorId = instructor?.Id,
@@ -263,11 +268,13 @@ public class DepartmentService : IDepartmentService
 {
     private readonly IDepartmentRepository _deptRepo;
     private readonly IFacultyRepository _facultyRepo;
+    private readonly IIdGeneratorService _idGen;
 
-    public DepartmentService(IDepartmentRepository deptRepo, IFacultyRepository facultyRepo)
+    public DepartmentService(IDepartmentRepository deptRepo, IFacultyRepository facultyRepo, IIdGeneratorService idGen)
     {
         _deptRepo = deptRepo;
         _facultyRepo = facultyRepo;
+        _idGen = idGen;
     }
 
     public async Task<IEnumerable<DepartmentDto>> GetAllAsync()
@@ -291,7 +298,7 @@ public class DepartmentService : IDepartmentService
 
         var dept = new Department
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = await _idGen.GenerateNextIdAsync<Department>("dept-"),
             DepartmentCode = $"DEPT{new Random().Next(100, 999)}",
             Name = dto.Name,
             HeadFacultyId = headFaculty?.Id,
@@ -386,13 +393,15 @@ public class EnrollmentService : IEnrollmentService
     private readonly IStudentRepository _studentRepo;
     private readonly ICourseRepository _courseRepo;
     private readonly ApplicationDbContext _db;
+    private readonly IIdGeneratorService _idGen;
 
-    public EnrollmentService(IEnrollmentRepository enrollmentRepo, IStudentRepository studentRepo, ICourseRepository courseRepo, ApplicationDbContext db)
+    public EnrollmentService(IEnrollmentRepository enrollmentRepo, ICourseRepository courseRepo, IStudentRepository studentRepo, ApplicationDbContext db, IIdGeneratorService idGen)
     {
         _enrollmentRepo = enrollmentRepo;
-        _studentRepo = studentRepo;
         _courseRepo = courseRepo;
+        _studentRepo = studentRepo;
         _db = db;
+        _idGen = idGen;
     }
 
     public async Task<IEnumerable<EnrollmentDto>> GetAllAsync()
@@ -459,7 +468,7 @@ public class EnrollmentService : IEnrollmentService
 
             await _enrollmentRepo.CreateAsync(new Enrollment
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = await _idGen.GenerateNextIdAsync<Enrollment>("enr-"),
                 StudentId = studentId,
                 CourseId = dto.CourseId,
                 Status = "Enrolled"

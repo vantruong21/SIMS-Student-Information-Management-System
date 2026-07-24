@@ -9,8 +9,13 @@ namespace SIMS.Api.Services;
 public class AttendanceService : IAttendanceService
 {
     private readonly ApplicationDbContext _db;
+    private readonly IIdGeneratorService _idGen;
 
-    public AttendanceService(ApplicationDbContext db) => _db = db;
+    public AttendanceService(ApplicationDbContext db, IIdGeneratorService idGen)
+    {
+        _db = db;
+        _idGen = idGen;
+    }
 
     public async Task<bool> SaveAttendanceAsync(SaveAttendanceDto dto)
     {
@@ -33,7 +38,7 @@ public class AttendanceService : IAttendanceService
             {
                 _db.Attendances.Add(new Attendance
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = await _idGen.GenerateNextIdAsync<Attendance>("att-"),
                     StudentId = entry.StudentId,
                     CourseId = dto.CourseId,
                     FacultyId = dto.FacultyId,

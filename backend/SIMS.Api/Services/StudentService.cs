@@ -19,19 +19,22 @@ public class StudentService : IStudentService
     private readonly IEnrollmentRepository _enrollmentRepo;
     private readonly IGradeRepository _gradeRepo;
     private readonly ICourseRepository _courseRepo;
+    private readonly IIdGeneratorService _idGen;
 
     public StudentService(
         IStudentRepository studentRepo,
         IUserRepository userRepo,
         IEnrollmentRepository enrollmentRepo,
         IGradeRepository gradeRepo,
-        ICourseRepository courseRepo)
+        ICourseRepository courseRepo,
+        IIdGeneratorService idGen)
     {
         _studentRepo = studentRepo;
         _userRepo = userRepo;
         _enrollmentRepo = enrollmentRepo;
         _gradeRepo = gradeRepo;
         _courseRepo = courseRepo;
+        _idGen = idGen;
     }
 
     public async Task<IEnumerable<StudentDto>> GetAllAsync()
@@ -51,8 +54,8 @@ public class StudentService : IStudentService
         if (await _studentRepo.EmailExistsAsync(dto.Email))
             return (false, ["A student with this email already exists"]);
 
-        var studentId = $"STU-{Guid.NewGuid().ToString()[..8].ToUpper()}";
-        var userId = Guid.NewGuid().ToString();
+        var studentId = await _idGen.GenerateNextIdAsync<Student>("stu-");
+        var userId = await _idGen.GenerateNextIdAsync<User>("usr-s-");
 
         var rawPassword = !string.IsNullOrWhiteSpace(dto.Password)
             ? dto.Password
