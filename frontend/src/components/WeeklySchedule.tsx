@@ -75,40 +75,51 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentKey]);
 
-  // Dynamic weekly schedule allocation
+  // Helper to parse days from schedule string
+  const parseDaysFromSchedule = (scheduleStr: string): Array<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> => {
+    const days: Array<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = [];
+    const normalized = scheduleStr.toLowerCase();
+    
+    if (normalized.includes('mon') || normalized.includes('m/')) days.push('Monday');
+    if (normalized.includes('tue') || normalized.includes('t/')) days.push('Tuesday');
+    if (normalized.includes('wed') || normalized.includes('w/')) days.push('Wednesday');
+    if (normalized.includes('thu') || normalized.includes('th/')) days.push('Thursday');
+    if (normalized.includes('fri') || normalized.includes('f/')) days.push('Friday');
+    
+    if (normalized.includes('tth')) {
+      if (!days.includes('Tuesday')) days.push('Tuesday');
+      if (!days.includes('Thursday')) days.push('Thursday');
+    }
+    if (normalized.includes('mw')) {
+      if (!days.includes('Monday')) days.push('Monday');
+      if (!days.includes('Wednesday')) days.push('Wednesday');
+    }
+    if (normalized.includes('mwf')) {
+      if (!days.includes('Monday')) days.push('Monday');
+      if (!days.includes('Wednesday')) days.push('Wednesday');
+      if (!days.includes('Friday')) days.push('Friday');
+    }
+
+    if (days.length === 0) days.push('Monday');
+    return days;
+  };
+
+  // Dynamic weekly schedule allocation from DB schedule strings
   const computedSchedule: ScheduleEvent[] = schedule.length > 0 ? schedule : [];
 
   if (computedSchedule.length === 0 && myCourses.length > 0) {
-    const dayMapping: Record<number, 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = {
-      0: 'Monday',
-      1: 'Tuesday',
-      2: 'Wednesday',
-      3: 'Thursday',
-      4: 'Friday'
-    };
-
     myCourses.forEach((c, idx) => {
-      const primaryDay = dayMapping[idx % 5];
-      const secondaryDay = dayMapping[(idx + 2) % 5];
-
-      computedSchedule.push({
-        id: `sched-${c.id}-1`,
-        day: primaryDay,
-        time: c.schedule || '09:00 - 10:30',
-        courseName: c.name,
-        courseCode: c.code,
-        room: 'Building A • Room 302',
-        instructor: c.instructor || 'Prof. Academic'
-      });
-
-      computedSchedule.push({
-        id: `sched-${c.id}-2`,
-        day: secondaryDay,
-        time: '13:30 - 15:00',
-        courseName: c.name,
-        courseCode: c.code,
-        room: 'Lab Center • Room 405',
-        instructor: c.instructor || 'Prof. Academic'
+      const days = parseDaysFromSchedule(c.schedule || 'Monday');
+      days.forEach((day, dayIdx) => {
+        computedSchedule.push({
+          id: `sched-${c.id}-${dayIdx}`,
+          day,
+          time: c.schedule || '09:00 - 10:30',
+          courseName: c.name,
+          courseCode: c.code,
+          room: `Building ${String.fromCharCode(65 + (idx % 3))} • Room ${301 + idx}`,
+          instructor: c.instructor || 'Prof. Academic'
+        });
       });
     });
   }
