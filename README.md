@@ -88,6 +88,19 @@ npm run dev
 | **Student (Sinh viên được cấp)** | Do Admin tạo từ **`Student Directory`** | `elevate2026` | Đăng nhập bằng Email sinh viên + `elevate2026`. |
 | **Student (Tự Đăng ký)** | Sinh viên tự đăng ký ngoài màn hình Register | *(Do Sinh viên tự nhập)* | Khi đăng ký tài khoản mới ngoài form Register, sinh viên tự điền **Password** và **Confirm Password**. |
 
+1. Role: Admin (Quản trị viên)
+
+Email: Admin@elevate.edu
+Mật khẩu: Password123!
+2. Role: Faculty (Giảng viên)
+
+Email: faculty1@elevate.edu (bạn có thể thử từ faculty1 đến faculty12)
+Mật khẩu: Password123!
+3. Role: Student (Sinh viên)
+
+Email: student1@elevate.edu (bạn có thể thử từ student1 đến student15)
+Mật khẩu: Password123!
+
 > 💡 **Lưu ý Security:** Sau lần đăng nhập đầu tiên bằng mật khẩu mặc định (`elevate2026`), người dùng có thể chủ động truy cập vào tab **My Profile** để đổi sang mật khẩu riêng!
 
 ---
