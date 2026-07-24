@@ -12,7 +12,9 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { GlassEmptyState } from '../GlassEmptyState';
-import { coursesApi } from '../../api';
+import { coursesApi, attendanceApi } from '../../api';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useAppStore } from '../../store/useAppStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,18 +81,29 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
     );
   };
 
-  // ── Freeze & Save ─────────────────────────────────────────────────────────
-  const handleSaveAndFreeze = () => {
+  const currentUser = useAuthStore(state => state.user);
+  const { faculty } = useAppStore();
+
+  // Resolve faculty ID from DB (match by email)
+  const facultyRecord = faculty.find(f => f.email === currentUser?.email);
+  const facultyId = facultyRecord?.id || currentUser?.id || '';
+
+  // ── Freeze & Save to DB ──────────────────────────────────────
+  const handleSaveAndFreeze = async () => {
     setIsSaving(true);
-    // TODO: POST attendance records to backend when API endpoint is ready
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const entries = attendanceList.map(s => ({ studentId: s.studentId, status: s.status }));
+      await attendanceApi.save(slotId, facultyId, entries);
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
         onBackToDashboard();
       }, 1500);
-    }, 1200);
+    } catch (err) {
+      console.error('Failed to save attendance:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // ── Stats ─────────────────────────────────────────────────────────────────

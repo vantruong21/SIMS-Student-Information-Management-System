@@ -72,3 +72,11 @@ public interface IGradeService
     Task<IEnumerable<GradeDto>> GetAllAsync();
     Task<bool> UpdateGradeAsync(UpdateGradeDto dto);
 }
+
+public interface IAttendanceService
+{
+    Task<bool> SaveAttendanceAsync(SIMS.Api.Dtos.Attendance.SaveAttendanceDto dto);
+    Task<IEnumerable<SIMS.Api.Dtos.Attendance.AttendanceRecordDto>> GetByStudentIdAsync(string studentId);
+    Task<IEnumerable<SIMS.Api.Dtos.Attendance.AttendanceSummaryDto>> GetSummaryByStudentIdAsync(string studentId);
+    Task<IEnumerable<SIMS.Api.Dtos.Attendance.AttendanceRecordDto>> GetByCourseIdAsync(string courseId);
+}

@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<Attendance> Attendances => Set<Attendance>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +129,24 @@ public class ApplicationDbContext : DbContext
             e.HasOne(en => en.Course)
              .WithMany(c => c.Enrollments)
              .HasForeignKey(en => en.CourseId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Attendances ────────────────────────────────────────────────────
+        modelBuilder.Entity<Attendance>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Status).HasMaxLength(20).IsRequired();
+            e.Property(a => a.FacultyId).HasMaxLength(100);
+
+            e.HasOne(a => a.Student)
+             .WithMany()
+             .HasForeignKey(a => a.StudentId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(a => a.Course)
+             .WithMany()
+             .HasForeignKey(a => a.CourseId)
              .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -70,6 +70,7 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
 // ─── 5. Controllers + Swagger ─────────────────────────────────────────────────
 builder.Services.AddControllers();

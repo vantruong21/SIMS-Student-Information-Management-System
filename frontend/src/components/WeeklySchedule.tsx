@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAttendanceStore, AttendanceRecord } from '../store/useAttendanceStore';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { attendanceApi, AttendanceRecord as ApiAttendanceRecord } from '../api';
 import { 
   Clock, 
   MapPin, 
@@ -19,7 +19,8 @@ import {
   Send,
   Check,
   FileCheck,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { ScheduleEvent } from '../types';
 import { GlassEmptyState } from './GlassEmptyState';
@@ -30,12 +31,13 @@ interface WeeklyScheduleProps {
 }
 
 export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] }) => {
-  const { history, submitRecovery } = useAttendanceStore();
   const { enrollments, courses, students } = useAppStore();
   const user = useAuthStore(state => state.user);
 
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
-  
+  const [dbAttendance, setDbAttendance] = useState<ApiAttendanceRecord[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
   const daysOfWeek: Array<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
   ];
@@ -53,6 +55,25 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
   const myCourses = myEnrollments
     .map(e => courses.find(c => c.id === e.courseId || c.code === e.courseId))
     .filter(Boolean) as any[];
+
+  // Load attendance from DB
+  const loadAttendance = async () => {
+    if (!studentKey) return;
+    setAttendanceLoading(true);
+    try {
+      const records = await attendanceApi.getByStudent(studentKey);
+      setDbAttendance(records);
+    } catch {
+      setDbAttendance([]);
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAttendance();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentKey]);
 
   // Dynamic weekly schedule allocation
   const computedSchedule: ScheduleEvent[] = schedule.length > 0 ? schedule : [];
@@ -92,31 +113,8 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
     });
   }
 
-  // Attendance History initialization if empty
-  const activeHistory: AttendanceRecord[] = history.length > 0 ? history : (
-    myCourses.length > 0 ? [
-      {
-        id: 'rec-1',
-        subject: `${myCourses[0]?.code} - ${myCourses[0]?.name}`,
-        date: '2026-07-21',
-        status: 'Present'
-      },
-      {
-        id: 'rec-2',
-        subject: `${myCourses[0]?.code} - ${myCourses[0]?.name}`,
-        date: '2026-07-22',
-        status: 'Late'
-      },
-      {
-        id: 'rec-3',
-        subject: `${myCourses[myCourses.length > 1 ? 1 : 0]?.code} - ${myCourses[myCourses.length > 1 ? 1 : 0]?.name}`,
-        date: '2026-07-23',
-        status: 'Absent',
-        recoveryRequested: false
-      }
-    ] : []
-  );
-
+  // Use DB attendance records as source of truth
+  const activeHistory = dbAttendance;
   const selectedRecord = activeHistory.find(h => h.id === selectedRecordId);
 
   return (
@@ -194,9 +192,19 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
 
       {/* Past Sessions Attendance Log Section */}
       <div className="glass-panel rounded-3xl p-6 border border-white/50 shadow-sm">
-        <div>
-          <h4 className="font-display text-sm font-bold text-indigo-950">Past Sessions Attendance Log</h4>
-          <p className="text-xs text-gray-500 mt-1">Review academic presence indexes and log recovery claims for absent markings.</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h4 className="font-display text-sm font-bold text-indigo-950">Past Sessions Attendance Log</h4>
+            <p className="text-xs text-gray-500 mt-1">Review academic presence indexes recorded by Faculty.</p>
+          </div>
+          <button
+            onClick={loadAttendance}
+            disabled={attendanceLoading}
+            className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-100 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${attendanceLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
         </div>
 
         {activeHistory.length > 0 ? (
@@ -214,10 +222,10 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
                 {activeHistory.map((record) => (
                   <tr key={record.id} className="hover:bg-white/30 transition-colors">
                     <td className="p-4 text-left">
-                      <div className="font-extrabold text-indigo-950">{record.subject}</div>
+                      <div className="font-extrabold text-indigo-950">{record.courseCode} — {record.courseName}</div>
                     </td>
                     <td className="p-4 text-gray-500 font-medium font-mono">
-                      {record.date}
+                      {record.attendedDate}
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
@@ -235,27 +243,13 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
                     </td>
                     <td className="p-4 text-right">
                       {record.status === 'Absent' ? (
-                        <>
-                          {!record.recoveryRequested ? (
-                            <button
-                              onClick={() => setSelectedRecordId(record.id)}
-                              className="bg-white/80 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm active:scale-95 inline-flex items-center gap-1.5 ml-auto"
-                            >
-                              <span>Request Recovery</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold ${
-                              record.recoveryStatus === 'Pending'
-                                ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                                : record.recoveryStatus === 'Approved'
-                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                : 'bg-red-50 text-red-500 border border-red-100'
-                            }`}>
-                              <span>Recovery: {record.recoveryStatus}</span>
-                            </span>
-                          )}
-                        </>
+                        <button
+                          onClick={() => setSelectedRecordId(record.id)}
+                          className="bg-white/80 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm active:scale-95 inline-flex items-center gap-1.5 ml-auto"
+                        >
+                          <span>Request Recovery</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
                       ) : (
                         <span className="text-gray-400 text-xs">-</span>
                       )}
@@ -279,7 +273,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
           <AttendanceRecoveryModal 
             record={selectedRecord}
             onClose={() => setSelectedRecordId(null)}
-            onSubmit={(reason) => submitRecovery(selectedRecord.id, reason)}
+            onSubmit={(_reason) => { setSelectedRecordId(null); }}
           />
         )}
       </AnimatePresence>
@@ -290,7 +284,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
 
 /* --- AttendanceRecoveryModal Component --- */
 interface AttendanceRecoveryModalProps {
-  record: AttendanceRecord;
+  record: ApiAttendanceRecord;
   onClose: () => void;
   onSubmit: (reason: string) => void;
 }
@@ -312,8 +306,7 @@ const AttendanceRecoveryModal: React.FC<AttendanceRecoveryModalProps> = ({
   // Check for future date vulnerability
   const isFutureDate = () => {
     try {
-      const recordDate = new Date(record.date);
-      // Ensure we only compare the date portion, not exact ms
+      const recordDate = new Date(record.attendedDate);
       recordDate.setHours(23, 59, 59, 999);
       return recordDate.getTime() > Date.now();
     } catch (e) {
@@ -411,11 +404,11 @@ const AttendanceRecoveryModal: React.FC<AttendanceRecoveryModalProps> = ({
         <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 text-xs space-y-2 mb-5">
           <div className="flex justify-between items-center">
             <span className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">Module</span>
-            <span className="font-extrabold text-indigo-950">{record.subject}</span>
+            <span className="font-extrabold text-indigo-950">{record.courseCode} — {record.courseName}</span>
           </div>
           <div className="flex justify-between items-center border-t border-indigo-100/30 pt-2">
             <span className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">Missed Date</span>
-            <span className="font-mono font-bold text-indigo-950">{record.date}</span>
+            <span className="font-mono font-bold text-indigo-950">{record.attendedDate}</span>
           </div>
         </div>
 

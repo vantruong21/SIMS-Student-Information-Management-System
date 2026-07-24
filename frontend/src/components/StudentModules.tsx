@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { attendanceApi, AttendanceSummary } from '../api';
 import { 
   BookOpen, 
   AlertTriangle, 
@@ -26,6 +27,7 @@ export const StudentModules: React.FC = () => {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedModule, setSelectedModule] = useState<any | null>(null);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary[]>([]);
 
   // Tim thong tin sinh vien trong store khop email hoac ID
   const studentInfo = students.find(s => 
@@ -36,12 +38,24 @@ export const StudentModules: React.FC = () => {
 
   const studentKey = studentInfo?.id || user?.id;
 
+  // Load attendance summary from DB
+  useEffect(() => {
+    if (!studentKey) return;
+    attendanceApi.getSummaryByStudent(studentKey)
+      .then(setAttendanceSummary)
+      .catch(() => setAttendanceSummary([]));
+  }, [studentKey]);
+
   // Lay danh sach cac mon sinh vien da dang ky thuc te tu CSDL
   const myEnrollments = enrollments.filter(e => e.studentId === studentKey || e.studentId === user?.id);
   const subjects = myEnrollments
     .map(e => {
       const c = courses.find(c => c.id === e.courseId || c.code === e.courseId);
       if (!c) return null;
+      // Get real absences from DB attendance summary
+      const summary = attendanceSummary.find(s => s.courseId === c.id);
+      const totalSessions = summary ? summary.totalSessions : 0;
+      const absences = summary ? summary.absentCount + summary.lateCount : 0;
       return {
         id: c.id,
         code: c.code,
@@ -50,8 +64,8 @@ export const StudentModules: React.FC = () => {
         credits: c.credits || 3,
         department: c.departmentId || 'Computer Science',
         schedule: c.schedule || 'TTH 09:00 - 10:30',
-        totalSessions: 16,
-        absences: 0
+        totalSessions: totalSessions || 16,
+        absences
       };
     })
     .filter(Boolean) as any[];
@@ -60,6 +74,10 @@ export const StudentModules: React.FC = () => {
     setIsRefreshing(true);
     try {
       await refreshData();
+      if (studentKey) {
+        const summary = await attendanceApi.getSummaryByStudent(studentKey);
+        setAttendanceSummary(summary);
+      }
     } finally {
       setIsRefreshing(false);
     }

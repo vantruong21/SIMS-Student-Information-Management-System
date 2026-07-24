@@ -167,3 +167,46 @@ export const gradesApi = {
   update: (studentId: string, courseId: string, type: 'assignment' | 'midterm' | 'final', value: number) =>
     put<void>('/grades', { studentId, courseId, type, value }),
 };
+
+// ─── ATTENDANCE ───────────────────────────────────────────────────────────────
+
+export type AttendanceStatus = 'Present' | 'Late' | 'Absent';
+
+export interface AttendanceRecord {
+  id: string;
+  studentId: string;
+  courseId: string;
+  courseName: string;
+  courseCode: string;
+  status: AttendanceStatus;
+  attendedDate: string;
+  reason?: string | null;
+}
+
+export interface AttendanceSummary {
+  courseId: string;
+  courseName: string;
+  courseCode: string;
+  totalSessions: number;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+}
+
+export const attendanceApi = {
+  /** Faculty/Admin freeze attendance → lưu DB */
+  save: (courseId: string, facultyId: string, entries: { studentId: string; status: AttendanceStatus }[]) =>
+    post<{ message: string }>('/attendance/save', { courseId, facultyId, entries }),
+
+  /** Student xem lịch sử từng buổi điểm danh */
+  getByStudent: (studentId: string) =>
+    get<AttendanceRecord[]>(`/attendance/student/${studentId}`),
+
+  /** Student xem tóm tắt chuyên cần theo môn */
+  getSummaryByStudent: (studentId: string) =>
+    get<AttendanceSummary[]>(`/attendance/student/${studentId}/summary`),
+
+  /** Admin/Faculty xem điểm danh theo môn học */
+  getByCourse: (courseId: string) =>
+    get<AttendanceRecord[]>(`/attendance/course/${courseId}`),
+};
