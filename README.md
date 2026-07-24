@@ -79,9 +79,21 @@ npm run dev
 | **Swagger UI (Backend API)** | `http://localhost:5000/swagger` | Test trực tiếp các RESTful API C# bằng giao diện "Try it out" mà không cần thông qua Frontend. |
 | **Postman / Bruno** | `http://localhost:5000/api/...` | Kiểm thử chuyên sâu HTTP Request/Response, JWT Bearer Tokens và kiểm tra các mã lỗi HTTP Status. |
 
+## 🔐 4. Tài khoản & Mật khẩu Mặc định (Default Credentials)
+
+| Role (Vai trò) | Phương thức Khởi tạo / Đăng ký | Mật khẩu Mặc định | Ghi chú |
+| :--- | :--- | :--- | :--- |
+| **Admin (Quản trị viên)** | Dữ liệu mẫu (Database Seed) | `admin123` | Đăng nhập tài khoản: `admin@elevate.edu` |
+| **Faculty (Giảng viên)** | Do Admin tạo từ **`Faculty Directory`** | `elevate2026` | Đăng nhập bằng Email công vụ + `elevate2026`, sau đó Admin duyệt tích màu xanh (`Approve`) để kích hoạt. |
+| **Student (Sinh viên được cấp)** | Do Admin tạo từ **`Student Directory`** | `elevate2026` | Đăng nhập bằng Email sinh viên + `elevate2026`. |
+| **Student (Tự Đăng ký)** | Sinh viên tự đăng ký ngoài màn hình Register | *(Do Sinh viên tự nhập)* | Khi đăng ký tài khoản mới ngoài form Register, sinh viên tự điền **Password** và **Confirm Password**. |
+
+> 💡 **Lưu ý Security:** Sau lần đăng nhập đầu tiên bằng mật khẩu mặc định (`elevate2026`), người dùng có thể chủ động truy cập vào tab **My Profile** để đổi sang mật khẩu riêng!
+
 ---
 
-## 🛡️ 4. Hướng dẫn Pentest (Kiểm thử Bảo mật) tại Local
+## 🛡️ 5. Hướng dẫn Pentest (Kiểm thử Bảo mật) tại Local
+
 
 Trước khi đẩy ứng dụng lên Server thật, tiến hành kiểm thử các lỗ hổng OWASP Top 10 tại Local:
 
