@@ -111,6 +111,7 @@ function App() {
           return <FacultyDashboard user={currentUser} courses={courses} onSelectSlot={(id, name) => { setActiveSlot({ id, name }); setCurrentTab('dashboard'); }} onNavigateTab={(tab) => { setCurrentTab(tab); setActiveSlot(null); }} />;
         case 'schedule': return <FacultySchedule courses={courses} onSelectSlot={(id, name) => { setActiveSlot({ id, name }); setCurrentTab('dashboard'); }} />;
         case 'grading': return <FacultyGrading />;
+        case 'analytics': return <DashboardAnalytics user={currentUser} />;
         case 'profile':
           return <UserProfileComponent user={currentUser} onUpdateProfile={async (data) => {
             await updateUserProfile(currentUser.email, data);
