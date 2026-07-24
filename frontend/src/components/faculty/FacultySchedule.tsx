@@ -22,20 +22,56 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
   ];
 
   const user = useAuthStore(state => state.user);
+  
+  // Case-insensitive filtering of faculty courses
+  const facultyCourses = courses.filter(c => 
+    c.instructor?.toLowerCase() === user?.name?.toLowerCase()
+  );
 
-  const facultyCourses = courses.filter(c => c.instructor === user?.name);
+  // Helper to parse days from schedule string
+  const parseDaysFromSchedule = (scheduleStr: string): Array<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> => {
+    const days: Array<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = [];
+    const normalized = scheduleStr.toLowerCase();
+    
+    if (normalized.includes('mon') || normalized.includes('m/')) days.push('Monday');
+    if (normalized.includes('tue') || normalized.includes('t/')) days.push('Tuesday');
+    if (normalized.includes('wed') || normalized.includes('w/')) days.push('Wednesday');
+    if (normalized.includes('thu') || normalized.includes('th/')) days.push('Thursday');
+    if (normalized.includes('fri') || normalized.includes('f/')) days.push('Friday');
+    
+    // Parse common codes
+    if (normalized.includes('tth')) {
+      if (!days.includes('Tuesday')) days.push('Tuesday');
+      if (!days.includes('Thursday')) days.push('Thursday');
+    }
+    if (normalized.includes('mw')) {
+      if (!days.includes('Monday')) days.push('Monday');
+      if (!days.includes('Wednesday')) days.push('Wednesday');
+    }
+    if (normalized.includes('mwf')) {
+      if (!days.includes('Monday')) days.push('Monday');
+      if (!days.includes('Wednesday')) days.push('Wednesday');
+      if (!days.includes('Friday')) days.push('Friday');
+    }
 
-  const scheduleEvents = facultyCourses.map((c, idx) => {
-    const day = daysOfWeek[idx % daysOfWeek.length];
-    return {
+    if (days.length === 0) days.push('Monday'); // Fallback
+    return days;
+  };
+
+  // Map courses to all their scheduled days
+  const scheduleEvents = facultyCourses.flatMap((c, idx) => {
+    const days = parseDaysFromSchedule(c.schedule || 'Monday');
+    return days.map(day => ({
       id: c.id,
       courseName: c.name,
       courseCode: c.code,
       day,
       time: c.schedule || '10:00 AM - 12:00 PM',
-      room: 'Main Campus ' + (300 + idx),
-    };
+      room: `Main Campus Room ${301 + idx}`,
+    }));
   });
+
+  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
     <div className="space-y-6 text-gray-800 animate-in fade-in duration-500 text-left">
@@ -45,7 +81,7 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
         </span>
         <h3 className="font-display text-lg font-bold text-indigo-950 mt-2">Weekly Teaching Schedule</h3>
         <p className="text-xs text-gray-500 mt-1">
-          Complete overview of your allocated lecture blocks. Click any active class to take attendance.
+          Complete overview of your allocated lecture blocks. Click any class to take attendance (updates DB).
         </p>
       </div>
 
@@ -57,7 +93,7 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
           {daysOfWeek.map((day) => {
             const dayEvents = scheduleEvents.filter(e => e.day === day);
-            const isToday = day === 'Friday';
+            const isToday = day === todayName;
 
             return (
               <GlassPanel 
@@ -79,7 +115,7 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
                   {dayEvents.length > 0 ? (
                     dayEvents.map((event) => (
                       <div 
-                        key={event.id}
+                        key={`${event.id}-${event.day}`}
                         onClick={() => onSelectSlot(event.id, event.courseName)}
                         className={`p-4 rounded-2xl transition-all duration-300 relative group text-left cursor-pointer border ${
                           isToday
@@ -114,8 +150,8 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
                           </div>
                         </div>
 
-                        {/* Hover Action */}
-                        <div className={`absolute inset-x-0 bottom-0 top-0 rounded-2xl backdrop-blur-[2px] bg-indigo-900/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 ${isToday ? 'block' : 'hidden'}`}>
+                        {/* Hover Action Overlay - Active for all classes */}
+                        <div className="absolute inset-x-0 bottom-0 top-0 rounded-2xl backdrop-blur-[2px] bg-indigo-900/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
                           <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-lg flex items-center gap-1.5 transform scale-90 group-hover:scale-100 transition-transform">
                             <Play className="w-3 h-3 fill-white" />
                             Take Attendance
@@ -140,3 +176,4 @@ export const FacultySchedule: React.FC<FacultyScheduleProps> = ({ courses, onSel
     </div>
   );
 };
+
