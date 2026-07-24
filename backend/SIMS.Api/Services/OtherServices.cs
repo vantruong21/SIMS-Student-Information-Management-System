@@ -281,7 +281,9 @@ public class DepartmentService : IDepartmentService
     public async Task<(bool Success, string[] Errors)> CreateAsync(CreateDepartmentDto dto)
     {
         var allFaculty = await _facultyRepo.GetAllAsync();
-        var headFaculty = allFaculty.FirstOrDefault(f => f.User.FullName == dto.Head || f.Id == dto.Head);
+        var headFaculty = allFaculty.FirstOrDefault(f => 
+            f.User.FullName.Equals(dto.Head, StringComparison.OrdinalIgnoreCase) ||
+            f.Id.Equals(dto.Head, StringComparison.OrdinalIgnoreCase));
 
         var dept = new Department
         {
@@ -296,10 +298,12 @@ public class DepartmentService : IDepartmentService
         // Gán các giảng viên được chọn vào khoa này
         if (dto.FacultyIds != null && dto.FacultyIds.Length > 0)
         {
-            foreach (var fId in dto.FacultyIds)
+            foreach (var fac in allFaculty)
             {
-                var fac = allFaculty.FirstOrDefault(f => f.Id == fId || f.User.FullName == fId);
-                if (fac != null)
+                var displayId = fac.Id.StartsWith("FAC-") || fac.Id.StartsWith("fac-") ? fac.Id : $"FAC-{fac.Id[..8].ToUpper()}";
+                if (dto.FacultyIds.Contains(fac.Id, StringComparer.OrdinalIgnoreCase) ||
+                    dto.FacultyIds.Contains(displayId, StringComparer.OrdinalIgnoreCase) ||
+                    dto.FacultyIds.Contains(fac.User.FullName, StringComparer.OrdinalIgnoreCase))
                 {
                     fac.DepartmentId = dept.Id;
                     await _facultyRepo.UpdateAsync(fac);
@@ -320,23 +324,39 @@ public class DepartmentService : IDepartmentService
         var allFaculty = await _facultyRepo.GetAllAsync();
         if (dto.Head is not null)
         {
-            var headFaculty = allFaculty.FirstOrDefault(f => f.User.FullName == dto.Head || f.Id == dto.Head);
+            var headFaculty = allFaculty.FirstOrDefault(f => 
+                f.User.FullName.Equals(dto.Head, StringComparison.OrdinalIgnoreCase) ||
+                f.Id.Equals(dto.Head, StringComparison.OrdinalIgnoreCase));
             dept.HeadFacultyId = headFaculty?.Id;
         }
         await _deptRepo.UpdateAsync(dept);
 
-        // Đồng bộ các giảng viên thuộc khoa
+        // Lấy khoa fallback mặc định nếu gỡ giảng viên khỏi khoa này
+        var defaultDeptId = await _deptRepo.GetFirstIdAsync() ?? "dept-1";
+
+        // Đồng bộ 2 chiều các giảng viên thuộc khoa
         if (dto.FacultyIds != null)
         {
             foreach (var fac in allFaculty)
             {
-                if (dto.FacultyIds.Contains(fac.Id) || dto.FacultyIds.Contains(fac.User.FullName))
+                var displayId = fac.Id.StartsWith("FAC-") || fac.Id.StartsWith("fac-") ? fac.Id : $"FAC-{fac.Id[..8].ToUpper()}";
+                var isMatched = dto.FacultyIds.Contains(fac.Id, StringComparer.OrdinalIgnoreCase) ||
+                                dto.FacultyIds.Contains(displayId, StringComparer.OrdinalIgnoreCase) ||
+                                dto.FacultyIds.Contains(fac.User.FullName, StringComparer.OrdinalIgnoreCase);
+
+                if (isMatched)
                 {
                     if (fac.DepartmentId != dept.Id)
                     {
                         fac.DepartmentId = dept.Id;
                         await _facultyRepo.UpdateAsync(fac);
                     }
+                }
+                else if (fac.DepartmentId == dept.Id)
+                {
+                    // Bị bỏ tích chọn khỏi khoa → gỡ về khoa mặc định
+                    fac.DepartmentId = defaultDeptId;
+                    await _facultyRepo.UpdateAsync(fac);
                 }
             }
         }

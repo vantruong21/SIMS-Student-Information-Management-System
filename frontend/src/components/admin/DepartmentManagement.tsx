@@ -71,17 +71,22 @@ export const DepartmentManagement: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const [viewingDept, setViewingDept] = useState<Department | null>(null);
+
   const columns: Column<Department>[] = [
     {
       header: 'Department',
       key: 'name',
       render: (dept) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
+        <div 
+          onClick={() => setViewingDept(dept)}
+          className="flex items-center gap-3 cursor-pointer group/dept"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 group-hover/dept:bg-indigo-600 group-hover/dept:text-white transition-colors flex items-center justify-center text-indigo-600">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <div className="font-bold text-indigo-950">{dept.name}</div>
+            <div className="font-bold text-indigo-950 group-hover/dept:text-indigo-600 transition-colors">{dept.name}</div>
             <div className="text-xs text-gray-500 w-48 truncate">{dept.description}</div>
           </div>
         </div>
@@ -106,9 +111,19 @@ export const DepartmentManagement: React.FC = () => {
     {
       header: 'Faculty Count',
       key: 'facultyCount',
-      render: (dept) => (
-        <Badge variant="info">{dept.facultyCount || 0} Members</Badge>
-      )
+      render: (dept) => {
+        const realCount = faculty.filter(f => f.department === dept.name || f.department === dept.id).length || dept.facultyCount || 0;
+        return (
+          <button 
+            type="button"
+            onClick={() => setViewingDept(dept)}
+            className="cursor-pointer hover:scale-105 transition-transform"
+            title="Click to view department members"
+          >
+            <Badge variant="info">{realCount} Members</Badge>
+          </button>
+        );
+      }
     },
     {
       header: 'Actions',
@@ -126,6 +141,10 @@ export const DepartmentManagement: React.FC = () => {
       )
     }
   ];
+
+  const deptMembers = viewingDept 
+    ? faculty.filter(f => f.department === viewingDept.name || f.department === viewingDept.id)
+    : [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -151,6 +170,7 @@ export const DepartmentManagement: React.FC = () => {
         />
       </GlassPanel>
 
+      {/* Edit/Create Modal */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
@@ -229,7 +249,78 @@ export const DepartmentManagement: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* View Department Members Modal */}
+      {viewingDept && (
+        <Modal
+          isOpen={!!viewingDept}
+          onClose={() => setViewingDept(null)}
+          title={`Department Roster — ${viewingDept.name}`}
+          maxWidth="max-w-lg"
+        >
+          <div className="space-y-4">
+            <div className="bg-indigo-50/60 border border-indigo-100 p-4 rounded-2xl">
+              <p className="text-xs text-gray-600 leading-relaxed">{viewingDept.description}</p>
+              <div className="mt-3 flex items-center justify-between border-t border-indigo-100/80 pt-2 text-xs">
+                <span className="text-gray-500 font-bold">Head of Department:</span>
+                <span className="font-extrabold text-indigo-950">{viewingDept.head || 'Staff Academic'}</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Faculty Members</h4>
+                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                  {deptMembers.length} Members
+                </span>
+              </div>
+
+              {deptMembers.length === 0 ? (
+                <div className="p-6 text-center border border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+                  <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-gray-500">No faculty members currently assigned</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Edit this department to assign academic staff.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                  {deptMembers.map(m => (
+                    <div 
+                      key={m.id}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:border-indigo-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
+                          {m.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-indigo-950">{m.name}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">{m.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {m.name === viewingDept.head && (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            Head
+                          </span>
+                        )}
+                        <Badge variant={m.status === 'Active' ? 'success' : 'warning'} dot>
+                          {m.status || 'Active'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <Button variant="secondary" onClick={() => setViewingDept(null)}>Close</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
+
 
