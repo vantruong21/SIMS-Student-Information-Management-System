@@ -8,6 +8,8 @@ import { DualPanelAllocation } from './admin/DualPanelAllocation';
 import { AdminCourseManagement } from './admin/AdminCourseManagement';
 import { DepartmentManagement } from './admin/DepartmentManagement';
 import { FacultyManagement } from './admin/FacultyManagement';
+import { SystemSettings } from './admin/SystemSettings';
+
 
 interface AdminDashboardProps {
   searchQuery: string;
@@ -152,13 +154,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return (
           <DepartmentManagement />
         );
-      case 'faculty':
+      case 'settings':
         return (
-          <FacultyManagement 
-            searchQuery={searchQuery}
-            onShowToast={showToast}
-          />
+          <SystemSettings onShowToast={showToast} />
         );
+      case 'profile':
+        return null;
       default:
         return (
           <CommandDashboard 
@@ -169,6 +170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         );
     }
   };
+
 
   return (
     <div className="space-y-6">

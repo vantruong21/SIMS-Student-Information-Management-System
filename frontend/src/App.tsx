@@ -126,9 +126,10 @@ function App() {
         case 'courses':
         case 'departments':
         case 'faculty':
+        case 'settings':
           return <AdminDashboard searchQuery={searchQuery} setSearchQuery={setSearchQuery} currentTab={currentTab} courses={courses} />;
         case 'analytics': return <DashboardAnalytics user={currentUser} />;
-        case 'settings': return <SystemSettings />;
+
         case 'profile':
           return <UserProfileComponent user={currentUser} onUpdateProfile={async (data) => {
             await updateUserProfile(currentUser.email, data);
