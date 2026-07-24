@@ -17,7 +17,7 @@ import { NetworkErrorBoundary } from './components/NetworkErrorBoundary';
 import { useNetwork } from './hooks/useNetwork';
 import { ToastProvider } from './contexts/ToastContext';
 import { SkipLink } from './components/common/Accessibility';
-import { AppFacade } from './facades/AppFacade';
+
 import { AlertCircle, LayoutDashboard, BookOpen, Calendar, GraduationCap, User, BarChart3, Settings, Users, Sparkles, Building2 } from 'lucide-react';
 import { FacultyDashboard } from './components/faculty/FacultyDashboard';
 import { FacultySchedule } from './components/faculty/FacultySchedule';

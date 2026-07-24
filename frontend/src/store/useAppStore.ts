@@ -12,7 +12,7 @@ import {
 /**
  * useAppStore — Application State Management kết nối trực tiếp C# Backend API.
  *
- * Thay thế hoàn toàn AppFacade → localStorage/CSV.
+ * Thay thế hoàn toàn Mock Data.
  * Mọi thao tác CRUD đều gọi API → MySQL (qua Backend C#).
  *
  * SOLID — Single Responsibility: quản lý state ứng dụng.
