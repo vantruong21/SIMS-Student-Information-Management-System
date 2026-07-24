@@ -11,7 +11,11 @@ public record EnrollmentDto(
     string StudentId,
     string CourseId,
     string EnrolledAt,
-    string Status
+    string Status,
+    decimal? AssignmentScore = null,
+    decimal? MidtermScore = null,
+    decimal? FinalScore = null,
+    decimal? TotalGrade = null
 );
 
 /// <summary>

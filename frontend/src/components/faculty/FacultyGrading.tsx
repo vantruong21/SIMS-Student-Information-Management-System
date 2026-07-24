@@ -84,13 +84,12 @@ export const FacultyGrading: React.FC = () => {
   const activeClass = courses.find(c => c.id === selectedClassId);
   const currentClassGrades = selectedClassId ? enrollments.filter(e => e.courseId === selectedClassId).map(e => {
     const s = students.find(s => s.id === e.studentId);
-    const g = appGrades.find(g => g.studentId === e.studentId && g.courseId === selectedClassId) || { assignment: 0, midterm: 0, final: 0 };
     return {
       id: e.studentId,
       name: s?.name || 'Unknown',
-      assignment: g.assignment,
-      midterm: g.midterm,
-      final: g.final
+      assignment: e.assignmentScore || 0,
+      midterm: e.midtermScore || 0,
+      final: e.finalScore || 0
     };
   }) : [];
 
@@ -122,7 +121,7 @@ export const FacultyGrading: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {courses.filter(c => c.instructor === user?.name).map((cls) => {
+            {courses.filter(cls => cls.instructor?.toLowerCase() === user?.name?.toLowerCase()).map((cls) => {
               const classEnrollments = enrollments.filter(e => e.courseId === cls.id);
               return (
                 <div

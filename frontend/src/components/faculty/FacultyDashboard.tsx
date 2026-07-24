@@ -35,7 +35,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
 
   const { enrollments } = useAppStore();
 
-  const facultyCourses = courses.filter(c => c.instructor === user.name);
+  const facultyCourses = courses.filter(c => c.instructor?.toLowerCase() === user.name?.toLowerCase());
 
   const slots = facultyCourses.map((c, idx) => {
     const isActive = (simulatedTime === 'morning' && idx === 0) || (simulatedTime === 'afternoon' && idx === 1);

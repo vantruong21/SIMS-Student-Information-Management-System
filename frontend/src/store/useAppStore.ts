@@ -403,8 +403,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!requireRoles(['Faculty', 'Admin'])) return false;
     try {
       await gradesApi.update(studentId, courseId, type, value);
-      const grades = await gradesApi.getAll();
-      set({ grades });
+      const [grades, enrollments] = await Promise.all([
+        gradesApi.getAll(),
+        enrollmentsApi.getAll(),
+      ]);
+      set({ grades, enrollments });
       return true;
     } catch {
       return false;

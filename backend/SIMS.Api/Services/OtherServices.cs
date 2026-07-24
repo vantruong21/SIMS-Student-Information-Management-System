@@ -397,7 +397,10 @@ public class EnrollmentService : IEnrollmentService
     public async Task<IEnumerable<EnrollmentDto>> GetAllAsync()
     {
         var enrollments = await _enrollmentRepo.GetAllAsync();
-        return enrollments.Select(e => new EnrollmentDto(e.Id, e.StudentId, e.CourseId, e.EnrolledAt.ToString("o"), e.Status));
+        return enrollments.Select(e => new EnrollmentDto(
+            e.Id, e.StudentId, e.CourseId, e.EnrolledAt.ToString("o"), e.Status,
+            e.AssignmentScore, e.MidtermScore, e.FinalScore, e.TotalGrade
+        ));
     }
 
     /// <summary>

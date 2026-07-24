@@ -153,7 +153,17 @@ export const departmentsApi = {
 // ─── ENROLLMENTS ──────────────────────────────────────────────────────────────
 
 export const enrollmentsApi = {
-  getAll: () => get<{ id: string; studentId: string; courseId: string; enrolledAt: string; status: string }[]>('/enrollments'),
+  getAll: () => get<{ 
+    id: string; 
+    studentId: string; 
+    courseId: string; 
+    enrolledAt: string; 
+    status: string;
+    assignmentScore?: number;
+    midtermScore?: number;
+    finalScore?: number;
+    totalGrade?: number;
+  }[]>('/enrollments'),
   assign: (courseId: string, studentIds: string[]) =>
     post<{ success: boolean; enrolled: number; errors: string[] }>('/enrollments/assign', { courseId, studentIds }),
   remove: (studentId: string, courseId: string) =>

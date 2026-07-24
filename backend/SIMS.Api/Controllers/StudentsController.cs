@@ -13,10 +13,11 @@ public class StudentsController : ControllerBase
     private readonly IStudentService _service;
     public StudentsController(IStudentService service) => _service = service;
 
-    /// <summary>GET /api/students — Lấy toàn bộ sinh viên (Admin only).</summary>
+    /// <summary>GET /api/students — Lấy toàn bộ sinh viên (Admin, Faculty).</summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Faculty")]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
+
 
     /// <summary>GET /api/students/{id} — Lấy chi tiết 1 sinh viên.</summary>
     [HttpGet("{id}")]
