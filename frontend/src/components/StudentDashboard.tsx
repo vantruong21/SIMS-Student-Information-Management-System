@@ -31,18 +31,65 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onNavigateTab
 }) => {
   const { enrollments, courses, grades, students } = useAppStore();
-  const announcements: any[] = [];
   
-  // Calculate dynamic data
-  const myEnrollments = enrollments.filter(e => e.studentId === user.id);
-  const myCourses = myEnrollments.map(e => courses.find(c => c.id === e.courseId)).filter(Boolean) as any[];
-  
-  const creditsCompleted = myCourses.reduce((acc, c) => acc + (c.credits || 0), 0);
-  
-  // Calculate real GPA from grades
-  const studentInfo = students.find(s => s.id === user.id);
-  const gpa = studentInfo?.gpa || 0; // The AppFacade already syncs GPA to studentInfo, but we can also recalculate if needed, let's use studentInfo for now, or just the user's gpa if not found
-  const displayGpa = studentInfo?.gpa ?? user.gpa ?? 0;
+  // Tim thong tin Sinh vien trong store khop email hoac ID
+  const studentInfo = students.find(s => 
+    s.email?.toLowerCase() === user.email?.toLowerCase() || 
+    s.id === user.id || 
+    s.userId === user.id
+  );
+
+  const studentKey = studentInfo?.id || user.id;
+
+  // Lấy danh sách Enrollments thực tế từ DB của Sinh viên này
+  const myEnrollments = enrollments.filter(e => e.studentId === studentKey || e.studentId === user.id);
+  const myCourses = myEnrollments
+    .map(e => courses.find(c => c.id === e.courseId || c.code === e.courseId))
+    .filter(Boolean) as any[];
+
+  // Tín chỉ đã tích lũy từ các môn đã đăng ký
+  const creditsCompleted = myCourses.reduce((acc, c) => acc + (c.credits || 3), 0);
+
+  // Tính điểm GPA thực tế từ bảng Grades của CSDL
+  const myGrades = grades.filter(g => g.studentId === studentKey || g.studentId === user.id);
+  let computedGpa = studentInfo?.gpa ?? user.gpa ?? 0;
+  if (myGrades.length > 0) {
+    const totalScore = myGrades.reduce((sum, g) => {
+      const avg = (g.assignment || 0) * 0.3 + (g.midterm || 0) * 0.3 + (g.final || 0) * 0.4;
+      let gpaPoint = 0.0;
+      if (avg >= 90) gpaPoint = 4.0;
+      else if (avg >= 80) gpaPoint = 3.5;
+      else if (avg >= 70) gpaPoint = 3.0;
+      else if (avg >= 60) gpaPoint = 2.0;
+      else if (avg >= 50) gpaPoint = 1.0;
+      return sum + gpaPoint;
+    }, 0);
+    computedGpa = totalScore / myGrades.length;
+  }
+
+  // Môn học tiếp theo (Next Lecture)
+  const nextCourse = myCourses.length > 0 ? myCourses[0] : null;
+
+  // Thông báo Campus
+  const announcements = [
+    {
+      id: 'ann-1',
+      title: 'Fall 2024 Final Examination Schedule Published',
+      category: 'Academic Bulletin',
+      time: '2 hours ago',
+      text: 'The academic registrar has officially released the exam schedules for all undergraduate programs. Check your student portal.',
+      important: true
+    },
+    {
+      id: 'ann-2',
+      title: 'Campus Central Library Extension Hours',
+      category: 'Facility Notice',
+      time: '1 day ago',
+      text: 'To support students during mid-term preparations, the central library will remain open 24/7 through next week.',
+      important: false
+    }
+  ];
+
 
   return (
     <div className="space-y-6 text-gray-800 animate-in fade-in duration-500">
@@ -89,7 +136,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </span>
           </div>
           <div className="font-display text-3xl md:text-4xl font-extrabold text-indigo-950">
-            {displayGpa.toFixed(2)}
+            {computedGpa.toFixed(2)}
           </div>
           <div className="text-[11px] text-emerald-600 font-bold mt-2 flex items-center gap-1">
             <span>+0.05</span>
@@ -121,18 +168,35 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <Calendar className="w-4 h-4" />
             </span>
           </div>
-          <div className="font-display text-base font-bold text-gray-400 italic">
-            No Lectures Today
-          </div>
-          <div className="text-[11px] text-gray-500 mt-2 flex flex-col gap-1">
-            <div className="flex items-center gap-1.5 text-gray-400 font-bold">
-              <span>All clear</span>
+          {nextCourse ? (
+            <div>
+              <div className="font-display text-base font-extrabold text-indigo-950 truncate">
+                {nextCourse.name} ({nextCourse.code})
+              </div>
+              <div className="text-[11px] text-indigo-600 font-bold mt-1 flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-indigo-500" />
+                <span>{nextCourse.schedule || 'TTH 09:00 - 10:30'}</span>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1">Instructor: {nextCourse.instructor || 'Prof. Academic'}</p>
             </div>
-            <div className="flex items-center gap-1 text-gray-400 mt-0.5">
-              <span>No upcoming lecture sessions found.</span>
+          ) : (
+            <div>
+              <div className="font-display text-base font-bold text-gray-400 italic">
+                No Active Modules
+              </div>
+              <div className="text-[11px] text-gray-500 mt-2 flex flex-col gap-1">
+                <span className="text-gray-400 font-bold">No enrolled courses</span>
+                <button 
+                  onClick={() => onNavigateTab('modules')} 
+                  className="text-xs text-indigo-600 font-bold hover:underline self-start mt-1 cursor-pointer"
+                >
+                  + Enroll Modules Now
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
       </section>
 
       <GlassPanel className="text-left">
