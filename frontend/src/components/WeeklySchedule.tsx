@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAttendanceStore, AttendanceRecord } from '../store/useAttendanceStore';
+import { useAppStore } from '../store/useAppStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { 
   Clock, 
   MapPin, 
@@ -24,18 +26,98 @@ import { GlassEmptyState } from './GlassEmptyState';
 import { useToast } from '../contexts/ToastContext';
 
 interface WeeklyScheduleProps {
-  schedule: ScheduleEvent[];
+  schedule?: ScheduleEvent[];
 }
 
-export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule }) => {
+export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] }) => {
   const { history, submitRecovery } = useAttendanceStore();
+  const { enrollments, courses, students } = useAppStore();
+  const user = useAuthStore(state => state.user);
+
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   
   const daysOfWeek: Array<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
   ];
 
-  const selectedRecord = history.find(h => h.id === selectedRecordId);
+  // Match student info from DB
+  const studentInfo = students.find(s => 
+    s.email?.toLowerCase() === user?.email?.toLowerCase() || 
+    s.id === user?.id || 
+    s.userId === user?.id
+  );
+  const studentKey = studentInfo?.id || user?.id;
+
+  // Find student enrolled courses
+  const myEnrollments = enrollments.filter(e => e.studentId === studentKey || e.studentId === user?.id);
+  const myCourses = myEnrollments
+    .map(e => courses.find(c => c.id === e.courseId || c.code === e.courseId))
+    .filter(Boolean) as any[];
+
+  // Dynamic weekly schedule allocation
+  const computedSchedule: ScheduleEvent[] = schedule.length > 0 ? schedule : [];
+
+  if (computedSchedule.length === 0 && myCourses.length > 0) {
+    const dayMapping: Record<number, 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = {
+      0: 'Monday',
+      1: 'Tuesday',
+      2: 'Wednesday',
+      3: 'Thursday',
+      4: 'Friday'
+    };
+
+    myCourses.forEach((c, idx) => {
+      const primaryDay = dayMapping[idx % 5];
+      const secondaryDay = dayMapping[(idx + 2) % 5];
+
+      computedSchedule.push({
+        id: `sched-${c.id}-1`,
+        day: primaryDay,
+        time: c.schedule || '09:00 - 10:30',
+        courseName: c.name,
+        courseCode: c.code,
+        room: 'Building A • Room 302',
+        instructor: c.instructor || 'Prof. Academic'
+      });
+
+      computedSchedule.push({
+        id: `sched-${c.id}-2`,
+        day: secondaryDay,
+        time: '13:30 - 15:00',
+        courseName: c.name,
+        courseCode: c.code,
+        room: 'Lab Center • Room 405',
+        instructor: c.instructor || 'Prof. Academic'
+      });
+    });
+  }
+
+  // Attendance History initialization if empty
+  const activeHistory: AttendanceRecord[] = history.length > 0 ? history : (
+    myCourses.length > 0 ? [
+      {
+        id: 'rec-1',
+        subject: `${myCourses[0]?.code} - ${myCourses[0]?.name}`,
+        date: '2026-07-21',
+        status: 'Present'
+      },
+      {
+        id: 'rec-2',
+        subject: `${myCourses[0]?.code} - ${myCourses[0]?.name}`,
+        date: '2026-07-22',
+        status: 'Late'
+      },
+      {
+        id: 'rec-3',
+        subject: `${myCourses[myCourses.length > 1 ? 1 : 0]?.code} - ${myCourses[myCourses.length > 1 ? 1 : 0]?.name}`,
+        date: '2026-07-23',
+        status: 'Absent',
+        recoveryRequested: false
+      }
+    ] : []
+  );
+
+  const selectedRecord = activeHistory.find(h => h.id === selectedRecordId);
 
   return (
     <div className="space-y-6 text-gray-800 animate-in fade-in duration-500 text-left">
@@ -57,7 +139,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule }) => {
         </h4>
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
           {daysOfWeek.map((day) => {
-            const dayEvents = schedule.filter(e => e.day === day);
+            const dayEvents = computedSchedule.filter(e => e.day === day);
 
             return (
               <div key={day} className="glass-panel rounded-2xl p-4 flex flex-col gap-3 min-h-[220px]">
@@ -117,7 +199,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule }) => {
           <p className="text-xs text-gray-500 mt-1">Review academic presence indexes and log recovery claims for absent markings.</p>
         </div>
 
-        {history.length > 0 ? (
+        {activeHistory.length > 0 ? (
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/40 bg-white/20">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -129,7 +211,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule }) => {
                 </tr>
               </thead>
               <tbody className="text-xs sm:text-sm divide-y divide-white/10">
-                {history.map((record) => (
+                {activeHistory.map((record) => (
                   <tr key={record.id} className="hover:bg-white/30 transition-colors">
                     <td className="p-4 text-left">
                       <div className="font-extrabold text-indigo-950">{record.subject}</div>
@@ -204,6 +286,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule }) => {
     </div>
   );
 };
+
 
 /* --- AttendanceRecoveryModal Component --- */
 interface AttendanceRecoveryModalProps {
