@@ -38,8 +38,10 @@ public class ExceptionMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error: {Message}", ex.Message);
-            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, "An unexpected error occurred.");
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, detail);
         }
+
     }
 
     private static async Task WriteErrorResponse(HttpContext context, HttpStatusCode statusCode, string message)

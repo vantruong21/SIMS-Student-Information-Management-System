@@ -56,6 +56,10 @@ public class FacultyService : IFacultyService
 
     public async Task<(bool Success, string[] Errors)> CreateAsync(CreateFacultyDto dto)
     {
+        var existingUser = await _userRepo.GetByEmailAsync(dto.Email);
+        if (existingUser is not null)
+            return (false, ["A user or faculty member with this email already exists"]);
+
         var userId = Guid.NewGuid().ToString();
         var user = new User
         {
@@ -68,6 +72,7 @@ public class FacultyService : IFacultyService
             IsActive = false   // Mới tạo → Pending (Admin phải Approve)
         };
         await _userRepo.CreateAsync(user);
+
 
         string? deptId = null;
         if (!string.IsNullOrWhiteSpace(dto.Department) && dto.Department != "dept-default")
