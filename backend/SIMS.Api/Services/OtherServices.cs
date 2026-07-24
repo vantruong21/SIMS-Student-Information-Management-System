@@ -6,6 +6,9 @@ using SIMS.Api.Dtos.Grade;
 using SIMS.Api.Models;
 using SIMS.Api.Repositories.Interfaces;
 using SIMS.Api.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using SIMS.Api.Data;
+
 
 namespace SIMS.Api.Services;
 
@@ -381,18 +384,43 @@ public class EnrollmentService : IEnrollmentService
     private readonly IEnrollmentRepository _enrollmentRepo;
     private readonly IStudentRepository _studentRepo;
     private readonly ICourseRepository _courseRepo;
+    private readonly ApplicationDbContext _db;
 
-    public EnrollmentService(IEnrollmentRepository enrollmentRepo, IStudentRepository studentRepo, ICourseRepository courseRepo)
+    public EnrollmentService(IEnrollmentRepository enrollmentRepo, IStudentRepository studentRepo, ICourseRepository courseRepo, ApplicationDbContext db)
     {
         _enrollmentRepo = enrollmentRepo;
         _studentRepo = studentRepo;
         _courseRepo = courseRepo;
+        _db = db;
     }
 
     public async Task<IEnumerable<EnrollmentDto>> GetAllAsync()
     {
         var enrollments = await _enrollmentRepo.GetAllAsync();
         return enrollments.Select(e => new EnrollmentDto(e.Id, e.StudentId, e.CourseId, e.EnrolledAt.ToString("o"), e.Status));
+    }
+
+    /// <summary>
+    /// Lấy danh sách sinh viên đã đăng ký môn học, JOIN với bảng Students và Users để lấy tên đầy đủ.
+    /// Đây là endpoint dành cho Faculty để hiển thị danh sách điểm danh.
+    /// </summary>
+    public async Task<IEnumerable<EnrolledStudentDto>> GetEnrolledStudentsAsync(string courseId)
+    {
+        var result = await (
+            from e in _db.Enrollments
+            join s in _db.Students on e.StudentId equals s.Id
+            join u in _db.Users on s.UserId equals u.Id
+            where e.CourseId == courseId && e.Status == "Enrolled"
+            select new EnrolledStudentDto(
+                s.Id,
+                u.FullName,
+                s.StudentCode,
+                s.Program,
+                e.Status
+            )
+        ).ToListAsync();
+
+        return result;
     }
 
     public async Task<AssignStudentsResultDto> AssignStudentsAsync(AssignStudentsDto dto)
@@ -441,6 +469,7 @@ public class EnrollmentService : IEnrollmentService
     public async Task<bool> RemoveStudentAsync(string studentId, string courseId) =>
         await _enrollmentRepo.DeleteAsync(studentId, courseId);
 }
+
 
 public class GradeService : IGradeService
 {

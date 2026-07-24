@@ -62,6 +62,7 @@ public interface IDepartmentService
 public interface IEnrollmentService
 {
     Task<IEnumerable<EnrollmentDto>> GetAllAsync();
+    Task<IEnumerable<EnrolledStudentDto>> GetEnrolledStudentsAsync(string courseId);
     Task<AssignStudentsResultDto> AssignStudentsAsync(AssignStudentsDto dto);
     Task<bool> RemoveStudentAsync(string studentId, string courseId);
 }

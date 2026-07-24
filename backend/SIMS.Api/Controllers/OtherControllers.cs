@@ -57,7 +57,13 @@ public record ToggleLockFacultyDto(string Email);
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _service;
-    public CoursesController(ICourseService service) => _service = service;
+    private readonly IEnrollmentService _enrollmentService;
+
+    public CoursesController(ICourseService service, IEnrollmentService enrollmentService)
+    {
+        _service = service;
+        _enrollmentService = enrollmentService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
@@ -69,12 +75,25 @@ public class CoursesController : ControllerBase
         return c is null ? NotFound() : Ok(c);
     }
 
+    /// <summary>
+    /// Lấy danh sách sinh viên đang đăng ký một môn học.
+    /// Faculty & Admin được phép truy cập để hỗ trợ điểm danh.
+    /// </summary>
+    [HttpGet("{courseId}/students")]
+    [Authorize(Roles = "Admin,Faculty")]
+    public async Task<IActionResult> GetEnrolledStudents(string courseId)
+    {
+        var students = await _enrollmentService.GetEnrolledStudentsAsync(courseId);
+        return Ok(students);
+    }
+
     [HttpPost] [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateCourseDto dto)
     {
         var (success, errors) = await _service.CreateAsync(dto);
         return success ? StatusCode(201, new { message = "Course created" }) : BadRequest(new { errors });
     }
+
 
     [HttpPut("{id}")] [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateCourseDto dto)

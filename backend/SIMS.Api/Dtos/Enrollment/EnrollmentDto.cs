@@ -15,6 +15,18 @@ public record EnrollmentDto(
 );
 
 /// <summary>
+/// Response DTO cho một học viên đã đăng ký vào môn học, bao gồm tên đầy đủ.
+/// Được dùng bởi endpoint GET /api/courses/{courseId}/students cho Faculty điểm danh.
+/// </summary>
+public record EnrolledStudentDto(
+    string StudentId,
+    string StudentName,
+    string StudentCode,
+    string Program,
+    string EnrollmentStatus
+);
+
+/// <summary>
 /// Request body gán sinh viên vào khóa học.
 /// Khớp với enrollStudents(courseId, studentIds[]) trong AppFacade.ts.
 /// </summary>

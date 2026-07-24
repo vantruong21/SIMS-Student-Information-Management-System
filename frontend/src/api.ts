@@ -120,6 +120,10 @@ export const facultyApi = {
 
 export const coursesApi = {
   getAll: () => get<import('./types').Course[]>('/courses'),
+  getEnrolledStudents: (courseId: string) =>
+    get<{ studentId: string; studentName: string; studentCode: string; program: string; enrollmentStatus: string }[]>(
+      `/courses/${courseId}/students`
+    ),
   create: (data: {
     code: string; name: string; instructor: string;
     schedule: string; credits: number; capacity?: number; department?: string;
@@ -132,6 +136,7 @@ export const coursesApi = {
   updateInstructor: (id: string, instructor: string) =>
     patch<void>(`/courses/${id}/instructor`, { instructor }),
 };
+
 
 // ─── DEPARTMENTS ──────────────────────────────────────────────────────────────
 
