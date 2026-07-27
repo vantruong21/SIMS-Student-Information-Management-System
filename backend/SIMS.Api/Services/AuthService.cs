@@ -50,28 +50,16 @@ public class AuthService : IAuthService
         var user = await _userRepo.GetByEmailAsync(email);
         if (user is null || !user.IsActive) return null;
 
-        // Check account lock
-        if (user.IsLocked && user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
-            throw new UnauthorizedAccessException("Account is locked due to multiple failed login attempts. Try again later.");
+        // Check account lock (Allows admin to manually lock accounts)
+        if (user.IsLocked)
+            throw new UnauthorizedAccessException("Account is locked. Please contact administration.");
 
         // Verify BCrypt password
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
         {
-            user.FailedLoginAttempts++;
-            if (user.FailedLoginAttempts >= 5)
-            {
-                user.IsLocked = true;
-                user.LockedUntil = DateTime.UtcNow.AddMinutes(30);
-            }
-            await _userRepo.UpdateAsync(user);
-            var remaining = 5 - user.FailedLoginAttempts;
-            throw new UnauthorizedAccessException($"Invalid email or password.{(remaining > 0 ? $" {remaining} attempts remaining." : " Account locked.")}");
+            throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
-        // Success: reset failed attempts
-        user.FailedLoginAttempts = 0;
-        user.IsLocked = false;
-        user.LockedUntil = null;
         user.LastLoginAt = DateTime.UtcNow;
         await _userRepo.UpdateAsync(user);
 
