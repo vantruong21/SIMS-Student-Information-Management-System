@@ -54,8 +54,10 @@ public class AuthService : IAuthService
         if (user.IsLocked && user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
             throw new UnauthorizedAccessException("Account is locked due to multiple failed login attempts. Try again later.");
 
-        // Verify BCrypt password
-        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        // Verify BCrypt password (with Telex normalization fallback for Vietnamese keyboards)
+        string normalizedPassword = password.Replace("ỏ", "o").Replace("ơ", "o").Replace("ă", "a").Replace("á", "a").Replace("à", "a");
+        bool isValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash) || BCrypt.Net.BCrypt.Verify(normalizedPassword, user.PasswordHash);
+        if (!isValid)
         {
             user.FailedLoginAttempts++;
             if (user.FailedLoginAttempts >= 5)
