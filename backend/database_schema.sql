@@ -133,34 +133,3 @@ CREATE TABLE `Enrollments` (
     FOREIGN KEY (`StudentId`) REFERENCES `Students`(`Id`) ON DELETE CASCADE,
     FOREIGN KEY (`CourseId`) REFERENCES `Courses`(`Id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ====================================================================
--- SAMPLE SEED DATA
--- Password for all seed users: "Password123!" (BCrypt hashed)
--- ====================================================================
-
-INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `FullName`, `Role`, `IsActive`) VALUES
-('usr-admin-1', 'admin@elevate.edu', '$2a$11$q9F1w54xQJ.EwZgE3k5Ere9V2X8V.G8F5Z9w8Z5w8Z5w8Z5w8Z5w8', 'GS. Trần Hoàng', 'Admin', 1),
-('usr-fac-1', 'feynman@elevate.edu', '$2a$11$q9F1w54xQJ.EwZgE3k5Ere9V2X8V.G8F5Z9w8Z5w8Z5w8Z5w8Z5w8', 'Richard Feynman', 'Faculty', 1),
-('usr-stu-1', 'scholar@elevate.edu', '$2a$11$q9F1w54xQJ.EwZgE3k5Ere9V2X8V.G8F5Z9w8Z5w8Z5w8Z5w8Z5w8', 'John Doe', 'Student', 1);
-
-INSERT INTO `Departments` (`Id`, `DepartmentCode`, `Name`, `Description`) VALUES
-('dept-1', 'IT', 'Khoa Công nghệ Thông tin', 'Đào tạo kỹ sư phần mềm, khoa học máy tính và AI.'),
-('dept-2', 'MKT', 'Khoa Kinh tế Quản trị', 'Quản trị kinh doanh, Marketing và Tài chính.'),
-('dept-3', 'DES', 'Khoa Thiết kế Đồ họa', 'Thiết kế UI/UX, Đồ họa 2D/3D và Truyền thông.');
-
-INSERT INTO `Faculty` (`Id`, `UserId`, `FacultyCode`, `DepartmentId`, `Degree`) VALUES
-('fac-1', 'usr-fac-1', 'FAC2024001', 'dept-1', 'Professor');
-
-UPDATE `Departments` SET `HeadFacultyId` = 'fac-1' WHERE `Id` = 'dept-1';
-
-INSERT INTO `Students` (`Id`, `UserId`, `StudentCode`, `Program`, `Status`, `GPA`, `TotalCredits`) VALUES
-('stu-1', 'usr-stu-1', 'STU2024001', 'Software Engineering', 'Active', 3.85, 45);
-
-INSERT INTO `Courses` (`Id`, `Code`, `Name`, `DepartmentId`, `InstructorId`, `Schedule`, `Credits`, `Capacity`) VALUES
-('c-se101', 'SE101', 'Application Development', 'dept-1', 'fac-1', 'Mon/Wed 9:00 AM', 3, 40),
-('c-se102', 'SE102', 'Applied Programming & Design Principles', 'dept-1', 'fac-1', 'Tue/Thu 1:00 PM', 4, 35);
-
-INSERT INTO `Enrollments` (`Id`, `StudentId`, `CourseId`, `Status`, `AssignmentScore`, `MidtermScore`, `FinalScore`, `TotalGrade`) VALUES
-('enr-1', 'stu-1', 'c-se101', 'Enrolled', 90.00, 85.00, 92.00, 3.80),
-('enr-2', 'stu-1', 'c-se102', 'Enrolled', 88.00, 90.00, 86.00, 3.70);

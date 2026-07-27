@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ─── 1. CORS ──────────────────────────────────────────────────────────────────
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                     ?? ["http://localhost:3000"];
+                     ?? ["https://sims-student-information-management.vercel.app", "http://localhost:3000", "http://localhost:5173"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>

@@ -32,7 +32,7 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
 
   useEffect(() => {
     const start = Date.now();
-    fetch('http://localhost:5000/api/courses')
+    fetch('https://sims-backend-wtfs.onrender.com/api/courses')
       .then(() => setLatency(Date.now() - start))
       .catch(() => setLatency(null));
   }, []);
@@ -183,7 +183,7 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-bold text-gray-700">Database Connection</span>
-                <span className="font-extrabold text-emerald-600">MySQL 8.0 Connected (sims_db)</span>
+                <span className="font-extrabold text-emerald-600">MySQL Clever Cloud Connected</span>
               </div>
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 w-[100%] rounded-full"></div>
@@ -192,7 +192,7 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-bold text-gray-700">API Gateway Status</span>
-                <span className="font-extrabold text-indigo-600">Active (localhost:5000)</span>
+                <span className="font-extrabold text-indigo-600">Active (Render Cloud API)</span>
               </div>
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-indigo-500 w-[100%] rounded-full"></div>
