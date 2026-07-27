@@ -279,6 +279,49 @@ export const LoginScreen: React.FC = () => {
 
 
 
+          {/* Quick Demo Accounts Buttons */}
+          <div className="pt-2">
+            <div className="text-[10px] font-bold text-gray-400 uppercase text-center mb-1.5 tracking-wider">Quick Demo Login</div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@elevate.edu');
+                  setPassword('Password123!');
+                  clearError();
+                  login('admin@elevate.edu', 'Password123!');
+                }}
+                className="py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg border border-indigo-200 transition-all cursor-pointer text-center"
+              >
+                👑 Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('faculty1@elevate.edu');
+                  setPassword('Password123!');
+                  clearError();
+                  login('faculty1@elevate.edu', 'Password123!');
+                }}
+                className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs rounded-lg border border-blue-200 transition-all cursor-pointer text-center"
+              >
+                👨‍🏫 Faculty
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('student1@elevate.edu');
+                  setPassword('Password123!');
+                  clearError();
+                  login('student1@elevate.edu', 'Password123!');
+                }}
+                className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs rounded-lg border border-emerald-200 transition-all cursor-pointer text-center"
+              >
+                🎓 Student
+              </button>
+            </div>
+          </div>
+
           {/* Bottom link */}
           <div className="text-center pt-3">
             <p className="text-xs text-gray-500 font-medium">
