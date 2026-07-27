@@ -8,7 +8,7 @@
  * SOLID — Open/Closed: thêm endpoint mới không cần sửa hàm cũ.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://sims-backend-wtfs.onrender.com/api';
 
 const TOKEN_KEY = 'sims_jwt_token';
 
