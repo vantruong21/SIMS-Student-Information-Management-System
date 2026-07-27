@@ -12,6 +12,7 @@ USE `sims_db`;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `Enrollments`;
 DROP TABLE IF EXISTS `Courses`;
+DROP TABLE IF EXISTS `Faculties`;
 DROP TABLE IF EXISTS `Faculty`;
 DROP TABLE IF EXISTS `Students`;
 DROP TABLE IF EXISTS `Departments`;
@@ -54,9 +55,10 @@ CREATE TABLE `Departments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ====================================================================
--- TABLE 3: Faculty
 -- ====================================================================
-CREATE TABLE `Faculty` (
+-- TABLE 3: Faculties
+-- ====================================================================
+CREATE TABLE `Faculties` (
     `Id` VARCHAR(36) NOT NULL PRIMARY KEY,
     `UserId` VARCHAR(36) NOT NULL UNIQUE,
     `FacultyCode` VARCHAR(30) NOT NULL UNIQUE,
@@ -70,7 +72,7 @@ CREATE TABLE `Faculty` (
 
 ALTER TABLE `Departments`
     ADD CONSTRAINT `fk_departments_head_faculty`
-    FOREIGN KEY (`HeadFacultyId`) REFERENCES `Faculty`(`Id`) ON DELETE SET NULL;
+    FOREIGN KEY (`HeadFacultyId`) REFERENCES `Faculties`(`Id`) ON DELETE SET NULL;
 
 -- ====================================================================
 -- TABLE 4: Students
@@ -109,7 +111,7 @@ CREATE TABLE `Courses` (
     `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `UpdatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`DepartmentId`) REFERENCES `Departments`(`Id`) ON DELETE RESTRICT,
-    FOREIGN KEY (`InstructorId`) REFERENCES `Faculty`(`Id`) ON DELETE SET NULL,
+    FOREIGN KEY (`InstructorId`) REFERENCES `Faculties`(`Id`) ON DELETE SET NULL,
     INDEX `idx_courses_code` (`Code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
