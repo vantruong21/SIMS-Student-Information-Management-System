@@ -29,10 +29,11 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
   const pendingStudents = students.filter(s => s.status === 'Pending').length;
 
   const [latency, setLatency] = useState<number | null>(null);
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     const start = Date.now();
-    fetch('https://sims-backend-wtfs.onrender.com/api/courses')
+    fetch(`${apiBase}/courses`)
       .then(() => setLatency(Date.now() - start))
       .catch(() => setLatency(null));
   }, []);
@@ -183,7 +184,9 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-bold text-gray-700">Database Connection</span>
-                <span className="font-extrabold text-emerald-600">MySQL Clever Cloud Connected</span>
+                <span className="font-extrabold text-emerald-600">
+                  {import.meta.env.VITE_API_URL ? "MySQL Clever Cloud Connected" : "MySQL 8.0 Connected (sims_db)"}
+                </span>
               </div>
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 w-[100%] rounded-full"></div>
@@ -192,7 +195,9 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-bold text-gray-700">API Gateway Status</span>
-                <span className="font-extrabold text-indigo-600">Active (Render Cloud API)</span>
+                <span className="font-extrabold text-indigo-600">
+                  {import.meta.env.VITE_API_URL ? "Active (Render Cloud API)" : "Active (localhost:5000)"}
+                </span>
               </div>
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-indigo-500 w-[100%] rounded-full"></div>
