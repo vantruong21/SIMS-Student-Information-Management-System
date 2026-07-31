@@ -15,7 +15,7 @@ public class StudentsController : ControllerBase
 
     /// <summary>GET /api/students — Lấy toàn bộ sinh viên (Admin, Faculty).</summary>
     [HttpGet]
-    [Authorize(Roles = "Admin,Faculty")]
+    [Authorize(Roles = "Admin,Faculty,Student")]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
 

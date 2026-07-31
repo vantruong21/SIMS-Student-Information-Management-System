@@ -253,17 +253,7 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ schedule = [] })
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      {record.status === 'Absent' ? (
-                        <button
-                          onClick={() => setSelectedRecordId(record.id)}
-                          className="bg-white/80 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm active:scale-95 inline-flex items-center gap-1.5 ml-auto"
-                        >
-                          <span>Request Recovery</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 text-xs">-</span>
-                      )}
+                      <span className="text-gray-400 text-xs">-</span>
                     </td>
                   </tr>
                 ))}

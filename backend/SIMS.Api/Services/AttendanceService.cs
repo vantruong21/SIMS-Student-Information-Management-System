@@ -20,6 +20,22 @@ public class AttendanceService : IAttendanceService
     public async Task<bool> SaveAttendanceAsync(SaveAttendanceDto dto)
     {
         var date = DateTime.UtcNow.Date;
+        var nextDay = date.AddDays(1);
+
+        // Fetch all existing attendance IDs to determine the max ID number before the loop
+        var prefix = "att-";
+        var ids = await _db.Attendances
+            .Where(a => a.Id.StartsWith(prefix))
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var maxNum = ids.Count == 0 ? 0 : ids
+            .Select(id =>
+            {
+                var numStr = id.Substring(prefix.Length);
+                return int.TryParse(numStr, out int num) ? num : 0;
+            })
+            .Max();
 
         foreach (var entry in dto.Entries)
         {
@@ -27,7 +43,8 @@ public class AttendanceService : IAttendanceService
             var existing = await _db.Attendances.FirstOrDefaultAsync(a =>
                 a.StudentId == entry.StudentId &&
                 a.CourseId == dto.CourseId &&
-                a.AttendedDate.Date == date);
+                a.AttendedDate >= date &&
+                a.AttendedDate < nextDay);
 
             if (existing is not null)
             {
@@ -36,9 +53,10 @@ public class AttendanceService : IAttendanceService
             }
             else
             {
+                maxNum++;
                 _db.Attendances.Add(new Attendance
                 {
-                    Id = await _idGen.GenerateNextIdAsync<Attendance>("att-"),
+                    Id = $"{prefix}{maxNum:D2}",
                     StudentId = entry.StudentId,
                     CourseId = dto.CourseId,
                     FacultyId = dto.FacultyId,

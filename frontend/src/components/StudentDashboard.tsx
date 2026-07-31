@@ -9,8 +9,7 @@ import {
   GraduationCap, 
   BookMarked,
   Bell,
-  Clock,
-  ChevronRight
+  Clock
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -225,11 +224,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     {ann.text}
                   </p>
                 </div>
-
-                <Button variant="ghost" className="self-start md:self-center" onClick={() => {}}>
-                  <span>Read document</span>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
               </div>
             ))
           ) : (

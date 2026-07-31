@@ -17,7 +17,7 @@ public class FacultyController : ControllerBase
     private readonly IFacultyService _service;
     public FacultyController(IFacultyService service) => _service = service;
 
-    [HttpGet] [Authorize(Roles = "Admin,Faculty")]
+    [HttpGet] [Authorize(Roles = "Admin,Faculty,Student")]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
     [HttpGet("{id}")] [Authorize(Roles = "Admin,Faculty")]
@@ -154,7 +154,7 @@ public class EnrollmentsController : ControllerBase
     private readonly IEnrollmentService _service;
     public EnrollmentsController(IEnrollmentService service) => _service = service;
 
-    [HttpGet] [Authorize(Roles = "Admin,Faculty")]
+    [HttpGet] [Authorize(Roles = "Admin,Faculty,Student")]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
     [HttpPost("assign")] [Authorize(Roles = "Admin")]
@@ -176,7 +176,7 @@ public class GradesController : ControllerBase
     private readonly IGradeService _service;
     public GradesController(IGradeService service) => _service = service;
 
-    [HttpGet] [Authorize(Roles = "Admin,Faculty")]
+    [HttpGet] [Authorize(Roles = "Admin,Faculty,Student")]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
     [HttpPut] [Authorize(Roles = "Admin,Faculty")]

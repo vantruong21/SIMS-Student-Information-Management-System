@@ -189,32 +189,7 @@ export const StudentAttendanceCard: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-4 text-right">
-                    {record.status === 'Absent' && (
-                      <>
-                        {!record.recoveryRequested ? (
-                          <button
-                            onClick={() => setSelectedRecordId(record.id)}
-                            className="bg-white/80 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm hover:shadow active:scale-95 flex items-center gap-1.5 ml-auto"
-                          >
-                            <span>Request Recovery</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            record.recoveryStatus === 'Pending'
-                              ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                              : record.recoveryStatus === 'Approved'
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                              : 'bg-red-50 text-red-600 border border-red-100'
-                          }`}>
-                            Recovery: {record.recoveryStatus}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {record.status !== 'Absent' && (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
+                    <span className="text-gray-400 text-xs">-</span>
                   </td>
                 </tr>
               ))}

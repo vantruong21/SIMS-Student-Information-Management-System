@@ -46,6 +46,7 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // ── Fetch enrolled students from backend DB ──────────────────────────────
   const fetchStudents = async () => {
@@ -91,6 +92,7 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
   // ── Freeze & Save to DB ──────────────────────────────────────
   const handleSaveAndFreeze = async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
       const entries = attendanceList.map(s => ({ studentId: s.studentId, status: s.status }));
       await attendanceApi.save(slotId, facultyId, entries);
@@ -99,8 +101,9 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
         setSaveSuccess(false);
         onBackToDashboard();
       }, 1500);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save attendance:', err);
+      setSaveError(err.message || 'Failed to save attendance. Please check your connection.');
     } finally {
       setIsSaving(false);
     }
@@ -280,6 +283,13 @@ export const FacultyAttendance: React.FC<FacultyAttendanceProps> = ({
             />
           )}
         </div>
+
+        {saveError && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-300 mb-4">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>{saveError}</span>
+          </div>
+        )}
 
         {/* 3. Action Submission Bottom Area */}
         <div className="mt-8 pt-6 border-t border-indigo-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
