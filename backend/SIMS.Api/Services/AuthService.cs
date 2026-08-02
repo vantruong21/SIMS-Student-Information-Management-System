@@ -33,6 +33,10 @@ public class AuthService : IAuthService
     private readonly IGradeRepository _gradeRepo;
     private readonly JwtSettings _jwt;
 
+    // In-memory OTP store: email -> (otp, expiredAt)
+    // Đây là giải pháp Demo — không dùng cho production thực tế
+    private static readonly Dictionary<string, (string Otp, DateTime ExpiredAt)> _otpStore = new();
+
     public AuthService(
         IUserRepository userRepo,
         IStudentRepository studentRepo,
@@ -105,6 +109,46 @@ public class AuthService : IAuthService
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 11);
 
         await _userRepo.UpdateAsync(user);
+        return true;
+    }
+
+    /// <summary>
+    /// [DEMO MODE] Sinh OTP 6 số và trả thẳng về cho Frontend hiển thị.
+    /// Trong production thực tế, OTP này sẽ được gửi qua Email (SMTP/Resend).
+    /// </summary>
+    public async Task<string?> ForgotPasswordAsync(string email)
+    {
+        var user = await _userRepo.GetByEmailAsync(email.Trim().ToLower());
+        if (user is null || !user.IsActive) return null;
+
+        // Generate 6-digit OTP
+        var otp = new Random().Next(100_000, 999_999).ToString();
+        _otpStore[email.Trim().ToLower()] = (otp, DateTime.UtcNow.AddMinutes(10));
+
+        return otp; // Returned directly for Demo purposes
+    }
+
+    /// <summary>
+    /// Xác thực OTP và cập nhật mật khẩu mới vào Database.
+    /// </summary>
+    public async Task<bool> ResetPasswordAsync(string email, string otp, string newPassword)
+    {
+        var key = email.Trim().ToLower();
+
+        if (!_otpStore.TryGetValue(key, out var entry)) return false;
+        if (entry.ExpiredAt < DateTime.UtcNow || entry.Otp != otp)
+        {
+            _otpStore.Remove(key);
+            return false;
+        }
+
+        var user = await _userRepo.GetByEmailAsync(key);
+        if (user is null) return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 11);
+        await _userRepo.UpdateAsync(user);
+
+        _otpStore.Remove(key); // OTP đã dùng xong, xóa khỏi store
         return true;
     }
 

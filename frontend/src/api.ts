@@ -75,6 +75,10 @@ export const authApi = {
     post<{ token: string; user: import('./types').UserProfile }>('/auth/login', { email, password }),
   updateProfile: (phone?: string, password?: string) =>
     put<void>('/auth/profile', { phone, password }),
+  forgotPassword: (email: string) =>
+    post<{ message: string; otp: string }>('/auth/forgot-password', { email }),
+  resetPassword: (email: string, otp: string, newPassword: string) =>
+    post<{ message: string }>('/auth/reset-password', { email, otp, newPassword }),
 };
 
 // ─── STUDENTS ─────────────────────────────────────────────────────────────────

@@ -14,6 +14,8 @@ public interface IAuthService
 {
     Task<LoginResponseDto?> LoginAsync(string email, string password);
     Task<bool> UpdateProfileAsync(string email, string? phone, string? newPassword);
+    Task<string?> ForgotPasswordAsync(string email);          // returns OTP (Demo) or null if email not found
+    Task<bool> ResetPasswordAsync(string email, string otp, string newPassword);
 }
 
 public interface IStudentService

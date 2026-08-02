@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle, Info, User, Phone, MapPin, ChevronLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle, Info, User, Phone, MapPin, ChevronLeft, KeyRound, ShieldCheck, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
+import { authApi } from '../api';
 import { LiveRegion } from './common/Accessibility';
 
 /**
@@ -33,6 +34,75 @@ export const LoginScreen: React.FC = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirm, setShowRegConfirm] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // ── Forgot Password state ───────────────────────────────────────────────────
+  type FpStep = 'email' | 'otp' | 'reset' | 'success';
+  const [fpOpen, setFpOpen] = useState(false);
+  const [fpStep, setFpStep] = useState<FpStep>('email');
+  const [fpEmail, setFpEmail] = useState('');
+  const [fpOtpDisplay, setFpOtpDisplay] = useState('');   // the OTP shown to user
+  const [fpOtp, setFpOtp] = useState('');                  // what user types
+  const [fpNewPwd, setFpNewPwd] = useState('');
+  const [fpConfirmPwd, setFpConfirmPwd] = useState('');
+  const [fpShowPwd, setFpShowPwd] = useState(false);
+  const [fpLoading, setFpLoading] = useState(false);
+  const [fpError, setFpError] = useState('');
+
+  const openForgotPassword = () => {
+    setFpOpen(true);
+    setFpStep('email');
+    setFpEmail(email); // prefill with login email if typed
+    setFpOtp('');
+    setFpOtpDisplay('');
+    setFpNewPwd('');
+    setFpConfirmPwd('');
+    setFpError('');
+  };
+
+  const closeForgotPassword = () => {
+    setFpOpen(false);
+    setFpError('');
+  };
+
+  const handleForgotSubmitEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fpEmail.trim()) { setFpError('Please enter your email address.'); return; }
+    setFpLoading(true);
+    setFpError('');
+    try {
+      const res = await authApi.forgotPassword(fpEmail.trim().toLowerCase());
+      setFpOtpDisplay(res.otp);  // show OTP for demo
+      setFpStep('otp');
+    } catch (err: any) {
+      setFpError(err.message || 'Email not found. Please check and try again.');
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  const handleForgotVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFpError('');
+    if (!fpOtp.trim()) { setFpError('Please enter the OTP code.'); return; }
+    if (fpOtp.trim() !== fpOtpDisplay) { setFpError('Incorrect OTP. Please check again.'); return; }
+    setFpStep('reset');
+  };
+
+  const handleForgotResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFpError('');
+    if (fpNewPwd.length < 8) { setFpError('Password must be at least 8 characters.'); return; }
+    if (fpNewPwd !== fpConfirmPwd) { setFpError('Passwords do not match.'); return; }
+    setFpLoading(true);
+    try {
+      await authApi.resetPassword(fpEmail.trim().toLowerCase(), fpOtpDisplay, fpNewPwd);
+      setFpStep('success');
+    } catch (err: any) {
+      setFpError(err.message || 'Reset failed. Please try again.');
+    } finally {
+      setFpLoading(false);
+    }
+  };
 
   const addStudent = useAppStore(state => state.addStudent);
 
@@ -120,6 +190,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
+    <>
     <div className="w-full max-w-md mx-auto z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
       {/* Screen reader live region for status announcements */}
       <LiveRegion priority="assertive">{screenReaderMessage}</LiveRegion>
@@ -250,10 +321,7 @@ export const LoginScreen: React.FC = () => {
             </label>
             <a
               href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setInfoMessage('A password recovery link has been dispatched to your registered academic email inbox.');
-              }}
+              onClick={(e) => { e.preventDefault(); openForgotPassword(); }}
               className="text-xs text-indigo-600 hover:text-indigo-700 font-bold transition-colors hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded px-1"
               aria-label="Forgot your password? Click to request a recovery link"
             >
@@ -459,5 +527,215 @@ export const LoginScreen: React.FC = () => {
         )}
       </div>
     </div>
+
+    {/* ── Forgot Password Modal ────────────────────────────────────────────── */}
+    {fpOpen && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Password Recovery"
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-indigo-950/30 backdrop-blur-2xl"
+          onClick={closeForgotPassword}
+        />
+
+        {/* Modal Card */}
+        <div className="relative w-full max-w-sm bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white p-7 z-10 animate-in fade-in zoom-in-95 duration-200">
+
+          {/* Step: Email */}
+          {fpStep === 'email' && (
+            <form onSubmit={handleForgotSubmitEmail} className="space-y-5">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0">
+                  <KeyRound className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-indigo-950">Forgot Password</h2>
+                  <p className="text-[11px] text-gray-400 font-medium">Enter your registered email to receive an OTP</p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={fpEmail}
+                    onChange={e => setFpEmail(e.target.value)}
+                    placeholder="your@email.edu"
+                    autoFocus
+                    className="w-full pl-10 pr-4 py-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all"
+                  />
+                </div>
+              </div>
+
+              {fpError && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-semibold">{fpError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2.5 pt-1">
+                <button type="button" onClick={closeForgotPassword}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" disabled={fpLoading}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2">
+                  {fpLoading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Sending...</> : <>Send OTP <ArrowRight className="w-3.5 h-3.5" /></>}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step: OTP Verification */}
+          {fpStep === 'otp' && (
+            <form onSubmit={handleForgotVerifyOtp} className="space-y-5">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-indigo-950">Verify OTP</h2>
+                  <p className="text-[11px] text-gray-400 font-medium">Enter the 6-digit code below</p>
+                </div>
+              </div>
+
+              {/* DEMO: Display OTP */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">🔒 Demo Mode — Your OTP</p>
+                <p className="text-2xl font-extrabold tracking-[0.35em] text-amber-700 font-mono">{fpOtpDisplay}</p>
+                <p className="text-[10px] text-amber-500 mt-1">Valid for 10 minutes</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Enter OTP Code</label>
+                <input
+                  type="text"
+                  value={fpOtp}
+                  onChange={e => setFpOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="• • • • • •"
+                  maxLength={6}
+                  autoFocus
+                  className="w-full px-4 py-3 text-center text-lg font-extrabold tracking-[0.4em] bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+                />
+              </div>
+
+              {fpError && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-semibold">{fpError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2.5 pt-1">
+                <button type="button" onClick={() => { setFpStep('email'); setFpError(''); }}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Back
+                </button>
+                <button type="submit"
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2">
+                  Verify <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step: New Password */}
+          {fpStep === 'reset' && (
+            <form onSubmit={handleForgotResetPassword} className="space-y-5">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                  <Lock className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-indigo-950">Set New Password</h2>
+                  <p className="text-[11px] text-gray-400 font-medium">Must be at least 8 characters</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">New Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type={fpShowPwd ? 'text' : 'password'}
+                      value={fpNewPwd}
+                      onChange={e => setFpNewPwd(e.target.value)}
+                      placeholder="New password"
+                      autoFocus
+                      className="w-full pl-10 pr-10 py-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+                    />
+                    <button type="button" onClick={() => setFpShowPwd(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
+                      {fpShowPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type={fpShowPwd ? 'text' : 'password'}
+                      value={fpConfirmPwd}
+                      onChange={e => setFpConfirmPwd(e.target.value)}
+                      placeholder="Re-enter new password"
+                      className="w-full pl-10 pr-4 py-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {fpError && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-semibold">{fpError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2.5 pt-1">
+                <button type="button" onClick={() => { setFpStep('otp'); setFpError(''); }}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Back
+                </button>
+                <button type="submit" disabled={fpLoading}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2">
+                  {fpLoading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Saving...</> : <>Reset Password <ShieldCheck className="w-3.5 h-3.5" /></>}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step: Success */}
+          {fpStep === 'success' && (
+            <div className="flex flex-col items-center text-center gap-5 py-3">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-emerald-500" />
+              </div>
+              <div>
+                <h2 className="text-sm font-extrabold text-indigo-950 mb-1">Password Reset Successful!</h2>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Your password has been updated. You can now log in with your new credentials.
+                </p>
+              </div>
+              <button
+                onClick={closeForgotPassword}
+                className="w-full py-3 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg cursor-pointer"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 };
