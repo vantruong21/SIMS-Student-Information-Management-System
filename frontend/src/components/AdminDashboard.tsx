@@ -67,9 +67,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 */
   // Handle student delete
   const deleteStudent = useAppStore(state => state.deleteStudent);
-  const handleDeleteStudent = useCallback((studentId: string) => {
-    deleteStudent(studentId);
-    showToast(`Successfully deleted student profile: ${studentId}`, 'success');
+  const handleDeleteStudent = useCallback(async (studentId: string) => {
+    const result = await deleteStudent(studentId);
+    if (result.success) {
+      showToast(`Successfully deleted student profile.`, 'success');
+    } else if (result.blockReason) {
+      showToast(result.blockReason, 'error');
+    } else {
+      showToast('Failed to delete student. Please try again.', 'error');
+    }
   }, [showToast, deleteStudent]);
   /*
     setLocalStudents(prev => prev.filter(s => s.id !== studentId));

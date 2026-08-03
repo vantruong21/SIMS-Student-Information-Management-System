@@ -352,9 +352,15 @@ export const FacultyManagement: React.FC<FacultyManagementProps> = ({
           <Button variant="danger" onClick={async () => {
             if (deleteConfirmId) {
               const fName = facultyList.find(f => f.id === deleteConfirmId)?.name || 'Faculty';
-              await deleteFaculty(deleteConfirmId);
-              onShowToast(`Deleted faculty profile: ${fName}`);
+              const result = await deleteFaculty(deleteConfirmId);
               setDeleteConfirmId(null);
+              if (result.success) {
+                onShowToast(`Deleted faculty profile: ${fName}`);
+              } else if (result.blockReason) {
+                onShowToast(result.blockReason, 'error' as any);
+              } else {
+                onShowToast('Failed to delete faculty. Please try again.', 'error' as any);
+              }
             }
           }}>
             Delete Profile

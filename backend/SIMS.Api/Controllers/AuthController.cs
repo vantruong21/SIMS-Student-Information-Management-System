@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SIMS.Api.Dtos.Auth;
 using SIMS.Api.Services.Interfaces;
+using SIMS.Api.Utils;
 
 namespace SIMS.Api.Controllers;
 
@@ -64,8 +65,9 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Otp) || string.IsNullOrWhiteSpace(dto.NewPassword))
             return BadRequest(new { error = "Email, OTP, and new password are required." });
 
-        if (dto.NewPassword.Length < 8)
-            return BadRequest(new { error = "Password must be at least 8 characters long." });
+        var pwErrors = PasswordPolicy.Validate(dto.NewPassword);
+        if (pwErrors.Length > 0)
+            return BadRequest(new { error = string.Join(" ", pwErrors) });
 
         var success = await _authService.ResetPasswordAsync(dto.Email, dto.Otp, dto.NewPassword);
         return success

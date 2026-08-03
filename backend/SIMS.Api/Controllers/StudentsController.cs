@@ -64,7 +64,9 @@ public class StudentsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(string id)
     {
-        var success = await _service.DeleteAsync(id);
+        var (success, blockReason) = await _service.DeleteAsync(id);
+        if (!success && blockReason is not null)
+            return Conflict(new { error = blockReason });
         return success ? Ok(new { message = "Student deleted" }) : NotFound();
     }
 

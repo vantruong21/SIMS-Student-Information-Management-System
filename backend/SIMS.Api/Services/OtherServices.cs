@@ -117,7 +117,26 @@ public class FacultyService : IFacultyService
         return true;
     }
 
-    public async Task<bool> DeleteAsync(string id) => await _facultyRepo.DeleteAsync(id);
+    public async Task<(bool Success, string? BlockReason)> DeleteAsync(string id)
+    {
+        var faculty = await _facultyRepo.GetByIdAsync(id);
+        if (faculty is null) return (false, null);
+
+        // Chặn xóa nếu giảng viên đang phụ trách ít nhất 1 môn học trong hệ thống
+        var assignedCourses = (await _courseRepo.GetAllWithEnrollmentCountAsync())
+            .Where(c => c.InstructorId == id)
+            .ToList();
+
+        if (assignedCourses.Count != 0)
+        {
+            var name = faculty.User?.FullName ?? id;
+            var courseNames = string.Join(", ", assignedCourses.Select(c => $"\"{c.Name}\""));
+            return (false, $"Cannot delete faculty \u201c{name}\u201d because they are currently assigned to {assignedCourses.Count} course(s): {courseNames}. Please reassign those courses first.");
+        }
+
+        await _facultyRepo.DeleteAsync(id);
+        return (true, null);
+    }
 
     public async Task<bool> ToggleLockAsync(string email)
     {

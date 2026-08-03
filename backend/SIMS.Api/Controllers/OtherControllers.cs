@@ -40,7 +40,12 @@ public class FacultyController : ControllerBase
 
     [HttpDelete("{id}")] [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(string id)
-        => await _service.DeleteAsync(id) ? Ok(new { message = "Faculty deleted" }) : NotFound();
+    {
+        var (success, blockReason) = await _service.DeleteAsync(id);
+        if (!success && blockReason is not null)
+            return Conflict(new { error = blockReason });
+        return success ? Ok(new { message = "Faculty deleted" }) : NotFound();
+    }
 
     [HttpPatch("{id}/lock")] [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ToggleLock([FromBody] ToggleLockFacultyDto dto)

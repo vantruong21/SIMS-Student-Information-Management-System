@@ -4,6 +4,7 @@ using SIMS.Api.Dtos.Student;
 using SIMS.Api.Models;
 using SIMS.Api.Repositories.Interfaces;
 using SIMS.Api.Services.Interfaces;
+using SIMS.Api.Utils;
 
 namespace SIMS.Api.Services;
 
@@ -54,12 +55,23 @@ public class StudentService : IStudentService
         if (await _studentRepo.EmailExistsAsync(dto.Email))
             return (false, ["A student with this email already exists"]);
 
-        var studentId = await _idGen.GenerateNextIdAsync<Student>("stu-");
-        var userId = await _idGen.GenerateNextIdAsync<User>("usr-s-");
-
+        // Validate password strength nếu Admin tự set mật khẩu
         var rawPassword = !string.IsNullOrWhiteSpace(dto.Password)
             ? dto.Password
-            : "elevate2026";
+            : null;
+
+        if (rawPassword is not null)
+        {
+            var pwErrors = PasswordPolicy.Validate(rawPassword);
+            if (pwErrors.Length > 0) return (false, pwErrors);
+        }
+        else
+        {
+            rawPassword = "Elevate@2026";  // default password đủ chuẩn mạnh
+        }
+
+        var studentId = await _idGen.GenerateNextIdAsync<Student>("stu-");
+        var userId = await _idGen.GenerateNextIdAsync<User>("usr-s-");
 
         // Create User account
         var user = new User
@@ -112,14 +124,21 @@ public class StudentService : IStudentService
         return true;
     }
 
-    public async Task<bool> DeleteAsync(string id)
+    public async Task<(bool Success, string? BlockReason)> DeleteAsync(string id)
     {
         var student = await _studentRepo.GetByIdAsync(id);
-        if (student is null) return false;
+        if (student is null) return (false, null);
 
-        // Cascade: delete enrollments first, then student (User cascade deletes via EF)
-        await _enrollmentRepo.DeleteByStudentIdAsync(id);
-        return await _studentRepo.DeleteAsync(id);
+        // Chặn xóa nếu sinh viên đang có đăng ký môn học trong hệ thống
+        var enrollments = await _enrollmentRepo.GetByStudentIdAsync(id);
+        if (enrollments.Any())
+        {
+            var name = student.User?.FullName ?? id;
+            return (false, $"Cannot delete student \u201c{name}\u201d because they are currently enrolled in {enrollments.Count()} course(s). Please unenroll the student from all courses before deleting.");
+        }
+
+        await _studentRepo.DeleteAsync(id);
+        return (true, null);
     }
 
     public async Task<bool> UpdateStatusAsync(string id, string status)

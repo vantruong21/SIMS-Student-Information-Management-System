@@ -57,7 +57,7 @@ interface AppState {
     name: string; email: string; program: string;
     phone?: string; dateOfBirth?: string; address?: string; status?: string; password?: string;
   }) => Promise<{ success: boolean; errors?: string[] }>;
-  deleteStudent: (studentId: string) => Promise<boolean>;
+  deleteStudent: (studentId: string) => Promise<{ success: boolean; blockReason?: string }>;
   updateStudentStatus: (studentId: string, status: string) => Promise<boolean>;
   updateStudentProfile: (studentId: string, data: Partial<{
     name: string; email: string; program: string; status: string;
@@ -72,7 +72,7 @@ interface AppState {
   updateFaculty: (id: string, data: Partial<{
     name: string; email: string; phone: string; isActive: boolean;
   }>) => Promise<boolean>;
-  deleteFaculty: (id: string) => Promise<boolean>;
+  deleteFaculty: (id: string) => Promise<{ success: boolean; blockReason?: string }>;
 
   // Course
   addCourse: (data: {
@@ -210,13 +210,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 
   deleteStudent: async (id) => {
-    if (!requireRoles(['Admin'])) return false;
+    if (!requireRoles(['Admin'])) return { success: false };
     try {
       await studentsApi.delete(id);
       set((s) => ({ students: s.students.filter((x) => x.id !== id) }));
-      return true;
-    } catch {
-      return false;
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, blockReason: err?.message };
     }
   },
 
@@ -305,13 +305,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteFaculty: async (id) => {
-    if (!requireRoles(['Admin'])) return false;
+    if (!requireRoles(['Admin'])) return { success: false };
     try {
       await facultyApi.delete(id);
       set((s) => ({ faculty: s.faculty.filter((x) => x.id !== id) }));
-      return true;
-    } catch {
-      return false;
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, blockReason: err?.message };
     }
   },
 

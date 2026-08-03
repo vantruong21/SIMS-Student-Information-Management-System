@@ -12,6 +12,24 @@ import { LiveRegion } from './common/Accessibility';
  * ACCESSIBILITY: Full keyboard navigation, ARIA labels, screen reader announcements, focus management.
  * CLEAN CODE: Separated validation, clear error handling, no hardcoded credentials.
  */
+
+/**
+ * Kiểm tra độ mạnh mật khẩu: ≥8 ký tự, chữ hoa, chữ thường, ký tự đặc biệt.
+ * Trả về mảng lỗi (rỗng nếu hợp lệ).
+ */
+function validatePasswordStrength(password: string): string[] {
+  const errors: string[] = [];
+  if (!password || password.length < 8)
+    errors.push('Password must be at least 8 characters long.');
+  if (!/[A-Z]/.test(password))
+    errors.push('Password must contain at least one uppercase letter (A-Z).');
+  if (!/[a-z]/.test(password))
+    errors.push('Password must contain at least one lowercase letter (a-z).');
+  if (!/[^a-zA-Z0-9\s]/.test(password))
+    errors.push('Password must contain at least one special character (e.g. @, $, !, %, *, ?, &, #).');
+  return errors;
+}
+
 export const LoginScreen: React.FC = () => {
   const { login, isLoading, error, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
@@ -91,8 +109,9 @@ export const LoginScreen: React.FC = () => {
   const handleForgotResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setFpError('');
-    if (fpNewPwd.length < 8) { setFpError('Password must be at least 8 characters.'); return; }
     if (fpNewPwd !== fpConfirmPwd) { setFpError('Passwords do not match.'); return; }
+    const pwErrors = validatePasswordStrength(fpNewPwd);
+    if (pwErrors.length > 0) { setFpError(pwErrors[0]); return; }
     setFpLoading(true);
     try {
       await authApi.resetPassword(fpEmail.trim().toLowerCase(), fpOtpDisplay, fpNewPwd);
@@ -152,8 +171,9 @@ export const LoginScreen: React.FC = () => {
       setScreenReaderMessage('Please enter name and email.');
       return;
     }
-    if (!regPassword || regPassword.length < 6) {
-      useAuthStore.setState({ error: 'Password must be at least 6 characters.' });
+    const pwErrors = validatePasswordStrength(regPassword);
+    if (pwErrors.length > 0) {
+      useAuthStore.setState({ error: pwErrors[0] });
       return;
     }
     if (regPassword !== regConfirmPassword) {

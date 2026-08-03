@@ -24,7 +24,7 @@ public interface IStudentService
     Task<StudentDto?> GetByIdAsync(string id);
     Task<(bool Success, string[] Errors)> CreateAsync(CreateStudentDto dto);
     Task<bool> UpdateAsync(string id, UpdateStudentDto dto);
-    Task<bool> DeleteAsync(string id);
+    Task<(bool Success, string? BlockReason)> DeleteAsync(string id);
     Task<bool> UpdateStatusAsync(string id, string status);
     Task<bool> ToggleLockAsync(string email);
     Task<IEnumerable<CourseDto>> GetStudentCoursesAsync(string studentId);
@@ -38,7 +38,7 @@ public interface IFacultyService
     Task<FacultyDto?> GetByIdAsync(string id);
     Task<(bool Success, string[] Errors)> CreateAsync(CreateFacultyDto dto);
     Task<bool> UpdateAsync(string id, UpdateFacultyDto dto);
-    Task<bool> DeleteAsync(string id);
+    Task<(bool Success, string? BlockReason)> DeleteAsync(string id);
     Task<bool> ToggleLockAsync(string email);
 }
 
