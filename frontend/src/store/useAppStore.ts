@@ -111,7 +111,7 @@ interface AppState {
 
 
   // User profile
-  updateUserProfile: (email: string, data: { phone?: string; password?: string }) => Promise<boolean>;
+  updateUserProfile: (email: string, data: { phone?: string; password?: string; avatarUrl?: string }) => Promise<boolean>;
 }
 
 // ─── Store Implementation ─────────────────────────────────────────────────────
@@ -458,7 +458,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateUserProfile: async (_email, data) => {
     try {
-      await import('../api').then((m) => m.authApi.updateProfile(data.phone, data.password));
+      await import('../api').then((m) => m.authApi.updateProfile(data.phone, data.password, data.avatarUrl));
       return true;
     } catch {
       return false;

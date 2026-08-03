@@ -99,6 +99,11 @@ function App() {
         case 'profile':
           return <UserProfileComponent user={currentUser} onUpdateProfile={async (data) => {
             await updateUserProfile(currentUser.email, data);
+            setUser({
+              ...currentUser,
+              phone: data.phone ?? currentUser.phone,
+              avatarUrl: data.avatarUrl ?? currentUser.avatarUrl,
+            });
           }} />;
         default: return null;
       }
@@ -115,6 +120,11 @@ function App() {
         case 'profile':
           return <UserProfileComponent user={currentUser} onUpdateProfile={async (data) => {
             await updateUserProfile(currentUser.email, data);
+            setUser({
+              ...currentUser,
+              phone: data.phone ?? currentUser.phone,
+              avatarUrl: data.avatarUrl ?? currentUser.avatarUrl,
+            });
           }} />;
         default: return null;
       }
@@ -134,6 +144,11 @@ function App() {
         case 'profile':
           return <UserProfileComponent user={currentUser} onUpdateProfile={async (data) => {
             await updateUserProfile(currentUser.email, data);
+            setUser({
+              ...currentUser,
+              phone: data.phone ?? currentUser.phone,
+              avatarUrl: data.avatarUrl ?? currentUser.avatarUrl,
+            });
           }} />;
         default: return null;
       }

@@ -13,7 +13,7 @@ namespace SIMS.Api.Services.Interfaces;
 public interface IAuthService
 {
     Task<LoginResponseDto?> LoginAsync(string email, string password);
-    Task<bool> UpdateProfileAsync(string email, string? phone, string? newPassword);
+    Task<bool> UpdateProfileAsync(string email, string? phone, string? newPassword, string? avatarUrl = null);
     Task<string?> ForgotPasswordAsync(string email);          // returns OTP (Demo) or null if email not found
     Task<bool> ResetPasswordAsync(string email, string otp, string newPassword);
 }

@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Brand Logo */}
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-black text-sm tracking-tighter">
-                  E
+                  dat
                 </div>
                 <h1 className="font-display font-extrabold text-xl tracking-tight text-indigo-950">Elevate <span className="text-indigo-600 font-medium">Edu</span></h1>
               </div>

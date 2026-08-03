@@ -39,7 +39,7 @@ export const ADMIN_PROFILE: UserProfile = {
   name: 'GS. Tran Hoang',
   role: 'Admin',
   email: 'admin@elevate.edu',
-  avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDF1nW0r0b5Mhu1d-72_6JqL8uTQopKz518YIviupE6f5RREs2Mw9Mh0hoX2tTXh4mx1nIS_MrOdp53iAE3wNj1inO3NR_XLfUOQZfXbAX8Dl80n8tsroJRzLY2tFrQLbb5x5uJ5rkXkrBD7Pp-mvi5RZjHMb7H_J81eVXaz6s1KEXDRMgxkvs8uKB5SZbd4PhNGqnF_yZTC7N0DkP0mUKhKY2raZH9AvM-ZGaPN3fQCEUHjEpQYW2jlw'
+  avatarUrl: ""
 };
 
 export const PROFESSOR_PROFILE: UserProfile = {

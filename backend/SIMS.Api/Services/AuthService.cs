@@ -99,12 +99,13 @@ public class AuthService : IAuthService
         return new LoginResponseDto(token, profile);
     }
 
-    public async Task<bool> UpdateProfileAsync(string email, string? phone, string? newPassword)
+    public async Task<bool> UpdateProfileAsync(string email, string? phone, string? newPassword, string? avatarUrl = null)
     {
         var user = await _userRepo.GetByEmailAsync(email);
         if (user is null) return false;
 
         if (phone is not null) user.Phone = phone;
+        if (avatarUrl is not null) user.AvatarUrl = avatarUrl;
         if (!string.IsNullOrWhiteSpace(newPassword))
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 11);
 

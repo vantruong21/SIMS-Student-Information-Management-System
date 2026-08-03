@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
 
         if (email is null) return Unauthorized(new { error = "User claim not found in token" });
 
-        var success = await _authService.UpdateProfileAsync(email, dto.Phone, dto.Password);
+        var success = await _authService.UpdateProfileAsync(email, dto.Phone, dto.Password, dto.AvatarUrl);
         return success ? Ok(new { message = "Profile updated successfully" }) : NotFound();
     }
 
@@ -76,6 +76,6 @@ public class AuthController : ControllerBase
     }
 }
 
-public record UpdateProfileDto(string? Phone, string? Password);
+public record UpdateProfileDto(string? Phone, string? Password, string? AvatarUrl);
 public record ForgotPasswordDto(string Email);
 public record ResetPasswordDto(string Email, string Otp, string NewPassword);
