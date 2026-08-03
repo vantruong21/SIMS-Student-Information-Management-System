@@ -12,12 +12,10 @@ using SIMS.Api.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 // ─── 1. CORS ──────────────────────────────────────────────────────────────────
-var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                     ?? ["http://localhost:3000"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(origin => true) // Allow any localhost/origin for dev
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
